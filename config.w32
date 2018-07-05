@@ -1,0 +1,13 @@
+// $Id$
+// vim:ft=javascript
+
+// If your extension references something external, use ARG_WITH
+// ARG_WITH("PulseFlow", "for PulseFlow support", "no");
+
+// Otherwise, use ARG_ENABLE
+// ARG_ENABLE("PulseFlow", "enable PulseFlow support", "no");
+
+if (PHP_PULSEFLOW != "no") {
+	EXTENSION("PulseFlow", "PulseFlow.c", PHP_EXTNAME_SHARED, "/DZEND_ENABLE_STATIC_TSRMLS_CACHE=1");
+}
+
