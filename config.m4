@@ -7,9 +7,9 @@ dnl without editing.
 
 dnl If your extension references something external, use with:
 
-dnl PHP_ARG_WITH(PulseFlow, for PulseFlow support,
+PHP_ARG_WITH(PulseFlow, for PulseFlow support,
 dnl Make sure that the comment is aligned:
-dnl [  --with-PulseFlow             Include PulseFlow support])
+[  --with-PulseFlow             Include PulseFlow support])
 
 dnl Otherwise use enable:
 
