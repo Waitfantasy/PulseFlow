@@ -38,6 +38,8 @@ static int le_PulseFlow;
 PHP_INI_BEGIN()
                 STD_ZEND_INI_ENTRY("PulseFlow.enabled", "0", ZEND_INI_ALL, OnUpdateBool, enabled,
                                    zend_PulseFlow_globals, PulseFlow_globals)
+                STD_ZEND_INI_ENTRY("PulseFlow.debug", "0", ZEND_INI_ALL, OnUpdateBool, debug,
+                                   zend_PulseFlow_globals, PulseFlow_globals)
 PHP_INI_END()
 
 static void (*_zend_execute_ex)(zend_execute_data *execute_data);
@@ -95,8 +97,9 @@ ZEND_DLEXPORT void PulseFlow_xhprof_execute_ex(zend_execute_data *execute_data) 
                 int end_m = getLinuxMemoryUse(begin_m TSRMLS_DC);
 
                 float elapsed = getLinuxTimeUse(&t0 TSRMLS_CC);
-
-               // php_printf("[ %s->%s ] Using [ CPU in %f milliseconds ] [ Memory %d bytes ]<br />\n", className->val,funcName->val, elapsed, end_m);
+                if(PULSEFLOW_G(debug)){
+                    php_printf("[ %s->%s ] Using [ CPU in %f milliseconds ] [ Memory %d bytes ]<br />\n", className->val,funcName->val, elapsed, end_m);
+                }
 
             }
         }

@@ -43,7 +43,8 @@ extern zend_module_entry PulseFlow_module_entry;
 	and END macros here:
 */
 ZEND_BEGIN_MODULE_GLOBALS(PulseFlow)
-	zend_bool   enabled;
+    zend_bool enabled;
+    zend_bool debug;
 ZEND_END_MODULE_GLOBALS(PulseFlow)
 
 
@@ -57,7 +58,7 @@ ZEND_END_MODULE_GLOBALS(PulseFlow)
 ZEND_TSRMLS_CACHE_EXTERN()
 #endif
 
-#endif	/* PHP_PULSEFLOW_H */
+#endif    /* PHP_PULSEFLOW_H */
 
 
 /*
