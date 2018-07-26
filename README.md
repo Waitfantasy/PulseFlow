@@ -8,7 +8,7 @@ PulseFlow是一个PHP扩展，它监视每个函数运行时的CPU和内存信�
 # 设计点1：配置选项 
 PulseFlow由于是一个基于C语言的PHP扩展，为了保持程序体的扩展性，配置选项一律从php.ini文件中读取，本节将描述所有与扩展程序有关系的配置信息。
 
-## 1.1 扩展功能开关参数 （PulseFlow.enabled） :green_heart:
+## 1.1 扩展功能开关参数 （PulseFlow.enabled） :heavy_check_mark:
 
 ### 1.1.1 参数介绍
 这个参数是插件的功能开关，属于布尔类型，有效参数如下，默认关闭：
@@ -16,7 +16,7 @@ PulseFlow由于是一个基于C语言的PHP扩展，为了保持程序体的扩�
 1.  true：开启
 2.  false：关闭
 
-## 1.2 日志功能开关参数 （PulseFlow.debug）
+## 1.2 日志功能开关参数 （PulseFlow.debug） :heavy_check_mark:
 
 ### 1.2.1 参数介绍
 这个参数是控制插件是否向页面输出调试信息，有效参数如下，默认关闭：
@@ -24,14 +24,14 @@ PulseFlow由于是一个基于C语言的PHP扩展，为了保持程序体的扩�
 1. true：开启
 2. false：关闭
 
-## 1.3 禁止跟踪函数列表 （PulseFLow.disable_trace_functions）
+## 1.3 禁止跟踪函数列表 （PulseFLow.disable_trace_functions） :heavy_check_mark:
 
 ### 1.3.1 参数介绍
 这个参数是一个逗号分隔的字符串，代表一系列函数列表，这个函数列表内的函数不进行性能跟踪，默认空字符串。
 
 配置样例：PulseFlow.disable_trace_functions = "getLoader,findFile,loadClassLoader,getInitializer,findFileWithExtension,"
 
-## 1.4 禁止跟踪类列表 （PulseFLow.disable_trace_class）
+## 1.4 禁止跟踪类列表 （PulseFLow.disable_trace_class） :heavy_check_mark:
 
 ### 1.4.1 参数介绍
 这个参数是一个逗号分隔的字符串，代表一系列类列表，这个类列表内的类不进行性能跟踪，默认空字符串。
