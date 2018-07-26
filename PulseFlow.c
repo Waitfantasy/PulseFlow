@@ -28,7 +28,6 @@
 #include "ext/standard/info.h"
 #include "php_PulseFlow.h"
 #include "tracing.h"
-#include "ext_libs.h"
 
 ZEND_DECLARE_MODULE_GLOBALS(PulseFlow)
 
@@ -45,6 +44,7 @@ PHP_INI_BEGIN()
                 STD_PHP_INI_ENTRY
                 ("PulseFlow.disable_trace_functions", "", PHP_INI_ALL, OnUpdateString, disable_trace_functions,
                  zend_PulseFlow_globals, PulseFlow_globals)
+
 PHP_INI_END()
 
 static void (*_zend_execute_ex)(zend_execute_data *execute_data);
@@ -69,18 +69,8 @@ ZEND_DLEXPORT void PulseFlow_xhprof_execute_ex(zend_execute_data *execute_data);
 /* {{{ PHP_MINIT_FUNCTION
  */
 PHP_MINIT_FUNCTION (PulseFlow) {
+
     REGISTER_INI_ENTRIES();
-
-    if (strlen(PULSEFLOW_G(disable_trace_functions))) {
-        char *blockFunctionList = strtok(PULSEFLOW_G(disable_trace_functions), ",");
-        while (blockFunctionList != NULL) {
-
-            printf("%d\n",map_hash(blockFunctionList));
-            blockFunctionList = strtok(NULL, ",");
-        }
-    } else {
-        printf("null\n");
-    }
 
     //_zend_execute_internal = zend_execute_internal;
     // zend_execute_internal = PulseFlow_xhprof_execute_internal;
@@ -95,15 +85,24 @@ PHP_MINIT_FUNCTION (PulseFlow) {
 ZEND_DLEXPORT void PulseFlow_xhprof_execute_ex(zend_execute_data *execute_data) {
 
     if (!PULSEFLOW_G(enabled)) {
+
         _zend_execute_ex(execute_data);
+
     } else {
+
         if (execute_data != NULL) {
+
             zend_string *className = tracing_get_class_name(execute_data TSRMLS_CC);
             zend_string *funcName = tracing_get_function_name(execute_data TSRMLS_CC);
             if (funcName == NULL || className == NULL) {
-                _zend_execute_ex(execute_data TSRMLS_CC);
-            } else {
 
+                _zend_execute_ex(execute_data TSRMLS_CC);
+
+            } else if (funcName != NULL && zend_hash_exists(PULSEFLOW_G(disable_trace_functions_hash), funcName)) {
+
+                _zend_execute_ex(execute_data TSRMLS_CC);
+
+            } else {
                 struct timeval t0;
                 getlinuxTime(&t0 TSRMLS_CC);
 
@@ -131,15 +130,23 @@ PHP_MSHUTDOWN_FUNCTION (PulseFlow) {
 
 }
 
+
 PHP_RINIT_FUNCTION (PulseFlow) {
 #if defined(COMPILE_DL_PULSEFLOW) && defined(ZTS)
     ZEND_TSRMLS_CACHE_UPDATE();
 #endif
+
+    INIT_disable_trace_functions_hash(TSRMLS_C);
+
     return SUCCESS;
 }
 
 PHP_RSHUTDOWN_FUNCTION (PulseFlow) {
+
+    FREE_disable_trace_functions_hash(TSRMLS_C);
+
     return SUCCESS;
+
 }
 
 PHP_MINFO_FUNCTION (PulseFlow) {
