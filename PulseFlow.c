@@ -45,6 +45,11 @@ PHP_INI_BEGIN()
                 ("PulseFlow.disable_trace_functions", "", PHP_INI_ALL, OnUpdateString, disable_trace_functions,
                  zend_PulseFlow_globals, PulseFlow_globals)
 
+                STD_PHP_INI_ENTRY
+                ("PulseFlow.disable_trace_class", "", PHP_INI_ALL, OnUpdateString, disable_trace_class,
+                 zend_PulseFlow_globals, PulseFlow_globals)
+
+
 PHP_INI_END()
 
 static void (*_zend_execute_ex)(zend_execute_data *execute_data);
@@ -102,6 +107,10 @@ ZEND_DLEXPORT void PulseFlow_xhprof_execute_ex(zend_execute_data *execute_data) 
 
                 _zend_execute_ex(execute_data TSRMLS_CC);
 
+            } else if (className != NULL && zend_hash_exists(PULSEFLOW_G(disable_trace_class_hash), className)) {
+
+                _zend_execute_ex(execute_data TSRMLS_CC);
+
             } else {
                 struct timeval t0;
                 getlinuxTime(&t0 TSRMLS_CC);
@@ -121,8 +130,8 @@ ZEND_DLEXPORT void PulseFlow_xhprof_execute_ex(zend_execute_data *execute_data) 
             }
         }
     }
-
 }
+
 
 PHP_MSHUTDOWN_FUNCTION (PulseFlow) {
 
@@ -138,12 +147,16 @@ PHP_RINIT_FUNCTION (PulseFlow) {
 
     INIT_disable_trace_functions_hash(TSRMLS_C);
 
+    INIT_disable_trace_class_hash(TSRMLS_C);
+
     return SUCCESS;
 }
 
 PHP_RSHUTDOWN_FUNCTION (PulseFlow) {
 
     FREE_disable_trace_functions_hash(TSRMLS_C);
+
+    FREE_disable_trace_class_hash(TSRMLS_C);
 
     return SUCCESS;
 

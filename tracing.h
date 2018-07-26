@@ -108,3 +108,39 @@ static zend_always_inline void FREE_disable_trace_functions_hash(TSRMLS_D) {
 }
 
 
+static zend_always_inline void INIT_disable_trace_class_hash(TSRMLS_D) {
+
+    ALLOC_HASHTABLE(PULSEFLOW_G(disable_trace_class_hash));
+    zend_hash_init(PULSEFLOW_G(disable_trace_class_hash), 0, NULL, NULL, 0);
+
+    if (strlen(PULSEFLOW_G(disable_trace_class))) {
+
+        char *blockFunctionList = strtok(PULSEFLOW_G(disable_trace_class), ",");
+
+        while (blockFunctionList != NULL) {
+
+            zval zv;
+            ZVAL_BOOL(&zv, IS_TRUE);
+
+            zend_string *hash_str = zend_string_init(blockFunctionList, strlen(blockFunctionList), 0);
+
+            if (!zend_hash_exists(PULSEFLOW_G(disable_trace_class_hash),hash_str)) {
+
+                zend_hash_add(PULSEFLOW_G(disable_trace_class_hash), hash_str, &zv
+                        ZEND_FILE_LINE_CC);
+            }
+
+            blockFunctionList = strtok(NULL, ",");
+
+        }
+
+    }
+
+}
+
+
+static zend_always_inline void FREE_disable_trace_class_hash(TSRMLS_D) {
+
+    FREE_HASHTABLE(PULSEFLOW_G(disable_trace_class_hash));
+
+}

@@ -42,13 +42,16 @@ extern zend_module_entry PulseFlow_module_entry;
   	Declare any global variables you may need between the BEGIN
 	and END macros here:
 */
-#include "string_hash.h"
 
 ZEND_BEGIN_MODULE_GLOBALS(PulseFlow)
     zend_bool enabled;
     zend_bool debug;
+
     char *disable_trace_functions;
     HashTable *disable_trace_functions_hash;
+
+    char *disable_trace_class;
+    HashTable *disable_trace_class_hash;
 ZEND_END_MODULE_GLOBALS(PulseFlow)
 
 
