@@ -16,20 +16,6 @@ PulseFlow由于是一个基于C语言的PHP扩展，为了保持程序体的扩�
 1.  true：开启
 2.  false：关闭
 
-### 1.1.2 功能实现
-在代码实现层，此参数存于全局变量enabled中，使用全局变量进行统一调控。
-```c
-ZEND_BEGIN_MODULE_GLOBALS(PulseFlow)
-	int   enabled;
-ZEND_END_MODULE_GLOBALS(PulseFlow)
-```
-
-```c
-PHP_INI_BEGIN()
-    ZEND_DECLARE_MODULE_GLOBALS(PulseFlow)
-    STD_ZEND_INI_ENTRY("PulseFlow.enabled","0",ZEND_INI_ALL,OnUpdateBool,enabled,zend_PulseFlow_globals,PulseFlow_globals)
-PHP_INI_END()
-```
 ## 1.2 日志功能开关参数 （PulseFlow.debug）
 
 ### 1.2.1 参数介绍
