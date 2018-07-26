@@ -1,5 +1,5 @@
 # :mega: PulseFlow 脉冲流 :ghost: :waxing_crescent_moon:
-PulseFlow是一个PHP扩展，它监视每个函数运行时的CPU和内存信息。
+PulseFlow是一个PHP扩展，它可以无感知的运行在Zend 内核里，自动拦截并分析每个函数运行时的CPU和内存信息。
 
 基于C进行开发，请使用PHP7.0以上版本
 # 背景描述
