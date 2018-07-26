@@ -1,4 +1,4 @@
-# PulseFlow 脉冲流
+# PulseFlow 脉冲流 :ghost:
 PulseFlow是一个PHP扩展，它监视每个函数运行时的CPU和内存信息。
 
 基于C进行开发，请使用PHP7.0以上版本
