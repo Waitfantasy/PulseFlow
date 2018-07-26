@@ -27,8 +27,8 @@
 #include "php_ini.h"
 #include "ext/standard/info.h"
 #include "php_PulseFlow.h"
-
 #include "tracing.h"
+#include "ext_libs.h"
 
 ZEND_DECLARE_MODULE_GLOBALS(PulseFlow)
 
@@ -36,10 +36,15 @@ ZEND_DECLARE_MODULE_GLOBALS(PulseFlow)
 static int le_PulseFlow;
 
 PHP_INI_BEGIN()
-                STD_ZEND_INI_ENTRY("PulseFlow.enabled", "0", ZEND_INI_ALL, OnUpdateBool, enabled,
-                                   zend_PulseFlow_globals, PulseFlow_globals)
-                STD_ZEND_INI_ENTRY("PulseFlow.debug", "0", ZEND_INI_ALL, OnUpdateBool, debug,
-                                   zend_PulseFlow_globals, PulseFlow_globals)
+                STD_PHP_INI_ENTRY("PulseFlow.enabled", "0", PHP_INI_ALL, OnUpdateBool, enabled,
+                                  zend_PulseFlow_globals, PulseFlow_globals)
+
+                STD_PHP_INI_ENTRY("PulseFlow.debug", "0", PHP_INI_ALL, OnUpdateBool, debug,
+                                  zend_PulseFlow_globals, PulseFlow_globals)
+
+                STD_PHP_INI_ENTRY
+                ("PulseFlow.disable_trace_functions", "", PHP_INI_ALL, OnUpdateString, disable_trace_functions,
+                 zend_PulseFlow_globals, PulseFlow_globals)
 PHP_INI_END()
 
 static void (*_zend_execute_ex)(zend_execute_data *execute_data);
@@ -65,6 +70,18 @@ ZEND_DLEXPORT void PulseFlow_xhprof_execute_ex(zend_execute_data *execute_data);
  */
 PHP_MINIT_FUNCTION (PulseFlow) {
     REGISTER_INI_ENTRIES();
+
+    if (strlen(PULSEFLOW_G(disable_trace_functions))) {
+        char *blockFunctionList = strtok(PULSEFLOW_G(disable_trace_functions), ",");
+        while (blockFunctionList != NULL) {
+
+            printf("%d\n",map_hash(blockFunctionList));
+            blockFunctionList = strtok(NULL, ",");
+        }
+    } else {
+        printf("null\n");
+    }
+
     //_zend_execute_internal = zend_execute_internal;
     // zend_execute_internal = PulseFlow_xhprof_execute_internal;
 
@@ -97,8 +114,9 @@ ZEND_DLEXPORT void PulseFlow_xhprof_execute_ex(zend_execute_data *execute_data) 
                 int end_m = getLinuxMemoryUse(begin_m TSRMLS_DC);
 
                 float elapsed = getLinuxTimeUse(&t0 TSRMLS_CC);
-                if(PULSEFLOW_G(debug)){
-                    php_printf("[ %s->%s ] Using [ CPU in %f milliseconds ] [ Memory %d bytes ]<br />\n", className->val,funcName->val, elapsed, end_m);
+                if (PULSEFLOW_G(debug)) {
+                    php_printf("[ %s->%s ] Using [ CPU in %f milliseconds ] [ Memory %d bytes ]<br />\n",
+                               className->val, funcName->val, elapsed, end_m);
                 }
 
             }
@@ -126,9 +144,9 @@ PHP_RSHUTDOWN_FUNCTION (PulseFlow) {
 
 PHP_MINFO_FUNCTION (PulseFlow) {
     php_info_print_table_start();
-    if (PULSEFLOW_G(enabled)){
+    if (PULSEFLOW_G(enabled)) {
         php_info_print_table_header(2, "PulseFlow support", "enabled");
-    }else{
+    } else {
         php_info_print_table_header(2, "PulseFlow support", "disabled");
     }
     php_info_print_table_end();

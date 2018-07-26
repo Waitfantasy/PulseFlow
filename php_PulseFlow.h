@@ -45,6 +45,7 @@ extern zend_module_entry PulseFlow_module_entry;
 ZEND_BEGIN_MODULE_GLOBALS(PulseFlow)
     zend_bool enabled;
     zend_bool debug;
+    char *disable_trace_functions;
 ZEND_END_MODULE_GLOBALS(PulseFlow)
 
 
