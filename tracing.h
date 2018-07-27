@@ -224,6 +224,7 @@ static zend_always_inline Class_Trace_Data *Trace_Class_Pointer(zend_string *cla
             Class_Trace_List_Poniter[current_Count].refCount = 0;
             Class_Trace_List_Poniter[current_Count].funcCount = 0;
             Class_Trace_List_Poniter[current_Count].funcMemoryCount = 0;
+            Class_Trace_List_Poniter[current_Count].memoryUse =0;
             Class_Trace_List_Poniter[current_Count].FuncList = NULL;
 
             //当前结构体内存大小足够使用，进行填充
