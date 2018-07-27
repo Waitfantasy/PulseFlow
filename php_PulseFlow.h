@@ -60,13 +60,21 @@ struct Class_Trace_Struct {
 };
 
 struct Func_Trace_Struct {
-    struct timeval t;
+    struct timeval CpuTimeStart;
     float useCpuTime;
-    unsigned int useMemory;
-    unsigned int useMemoryPeak;
+
+    size_t useMemoryStart;
+    size_t useMemory;
+
+    size_t useMemoryPeakStart;
+    size_t useMemoryPeak;
+
     unsigned int classFuncId;
+
     int refCount;
+
     Class_Trace_Data *ClassAddr;
+
     char *funcName;
 };
 

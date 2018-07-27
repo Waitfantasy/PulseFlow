@@ -115,26 +115,36 @@ ZEND_DLEXPORT void PulseFlow_xhprof_execute_ex(zend_execute_data *execute_data) 
                 // funcName and ClassName all not NULL
                 Class_Trace_Data *classPointer = Trace_Class_Pointer(className TSRMLS_CC);
 
-                if (classPointer != NULL){
+                int isExecCode = 1;
+                if (classPointer != NULL) {
                     //在Class Ponter基础上进行 函数 扩充
-                    Func_Trace_Data *funcPointer = Trace_Class_Function_Pointer(classPointer,funcName);
-
+                    Func_Trace_Data *funcPointer = Trace_Class_Function_Pointer(classPointer, funcName);
+                    if (funcPointer != NULL) {
+                        isExecCode = 0;
+                        Trace_Performance_Begin(classPointer, funcPointer);
+                        _zend_execute_ex(execute_data TSRMLS_CC);
+                        Trace_Performance_End(classPointer, funcPointer);
+                    }
                 }
 
-                struct timeval t0;
-                getlinuxTime(&t0 TSRMLS_CC);
-
-                int begin_m = getlinuxMemory(TSRMLS_CC);
-
-                _zend_execute_ex(execute_data TSRMLS_CC);
-
-                int end_m = getLinuxMemoryUse(begin_m TSRMLS_DC);
-
-                float elapsed = getLinuxTimeUse(&t0 TSRMLS_CC);
-                if (PULSEFLOW_G(debug)) {
-                    php_printf("[ %s->%s ] Using [ CPU in %f milliseconds ] [ Memory %d bytes ]<br />\n",
-                               className->val, funcName->val, elapsed, end_m);
+                if (isExecCode) {
+                    _zend_execute_ex(execute_data TSRMLS_CC);
                 }
+
+//                struct timeval t0;
+//                getlinuxTime(&t0 TSRMLS_CC);
+//
+//                int begin_m = getlinuxMemory(TSRMLS_CC);
+//
+//                _zend_execute_ex(execute_data TSRMLS_CC);
+//
+//                int end_m = getLinuxMemoryUse(begin_m TSRMLS_DC);
+//
+//                float elapsed = getLinuxTimeUse(&t0 TSRMLS_CC);
+//                if (PULSEFLOW_G(debug)) {
+//                    php_printf("[ %s->%s ] Using [ CPU in %f milliseconds ] [ Memory %d bytes ]<br />\n",
+//                               className->val, funcName->val, elapsed, end_m);
+//                }
 
             }
         }

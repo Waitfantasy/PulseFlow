@@ -59,17 +59,17 @@ static zend_always_inline float getLinuxTimeUse(struct timeval *begin TSRMLS_DC)
 
 }
 
-static zend_always_inline int getlinuxMemory(TSRMLS_D) {
-
-    return zend_memory_usage(0 TSRMLS_CC);
-
-}
-
-static zend_always_inline int getLinuxMemoryUse(int beginMemory TSRMLS_DC) {
-
-    return zend_memory_usage(0 TSRMLS_CC) - beginMemory;
-
-}
+//static zend_always_inline int getlinuxMemory(TSRMLS_D) {
+//
+//    return zend_memory_usage(0 TSRMLS_CC);
+//
+//}
+//
+//static zend_always_inline int getLinuxMemoryUse(int beginMemory TSRMLS_DC) {
+//
+//    return zend_memory_usage(0 TSRMLS_CC) - beginMemory;
+//
+//}
 
 static zend_always_inline void INIT_disable_trace_functions_hash(TSRMLS_D) {
 
@@ -316,7 +316,7 @@ Trace_Class_Function_Pointer(Class_Trace_Data *classPointer, zend_string *funcNa
                 int i;
                 for (i = 0; i < current_Count; ++i) {
                     int funcId = Func_Trace_List_Poniter[i].classFuncId;
-                    Func_Trace_List_Poniter[i].ClassAddr->FuncList[funcId] = Func_Trace_List_Poniter+i;
+                    Func_Trace_List_Poniter[i].ClassAddr->FuncList[funcId] = Func_Trace_List_Poniter + i;
                 }
 
             } else {
@@ -423,23 +423,46 @@ static zend_always_inline Class_Trace_Data *Trace_Clean_Func_Struct(TSRMLS_D) {
     }
 }
 
+static zend_always_inline void
+Trace_Performance_Begin(Class_Trace_Data *classPointer, Func_Trace_Data *funcPointer  TSRMLS_DC) {
+    getlinuxTime(&funcPointer->CpuTimeStart TSRMLS_CC);
+    funcPointer->useMemoryStart = zend_memory_usage(0 TSRMLS_CC);
+    funcPointer->useMemoryPeakStart = zend_memory_peak_usage(0 TSRMLS_CC);
+    funcPointer->refCount++;
+    classPointer->refCount++;
+}
 
-void PrintClassStruct(TSRMLS_D) {
+static zend_always_inline void
+Trace_Performance_End(Class_Trace_Data *classPointer, Func_Trace_Data *funcPointer  TSRMLS_DC) {
+    funcPointer->useCpuTime += (getLinuxTimeUse(&funcPointer->CpuTimeStart TSRMLS_CC));
+    funcPointer->useMemory += (zend_memory_usage(0 TSRMLS_CC) - funcPointer->useMemoryStart);
+    funcPointer->useMemoryPeak += (zend_memory_peak_usage(0 TSRMLS_CC) - funcPointer->useMemoryPeakStart);
+}
+
+static zend_always_inline void PrintClassStruct(TSRMLS_D) {
     int current_Count = PULSEFLOW_G(Class_Trace_Current_Size);
 
     Class_Trace_Data *Class_Trace_List_Poniter = PULSEFLOW_G(Class_Trace_List);
     int i1;
     for (i1 = 0; i1 < current_Count; ++i1) {
         if (Class_Trace_List_Poniter[i1].className != NULL) {
-            php_printf("Class Name %s have %d functions <br />\n", Class_Trace_List_Poniter[i1].className,
-                   Class_Trace_List_Poniter[i1].funcCount);
+            php_printf("Class Name %s have %d functions  Called Total %d<br />\n",
+                       Class_Trace_List_Poniter[i1].className,
+                       Class_Trace_List_Poniter[i1].funcCount, Class_Trace_List_Poniter[i1].refCount);
 
             int i2;
             int funclen = Class_Trace_List_Poniter[i1].funcCount;
             for (i2 = 0; i2 < funclen; ++i2) {
                 if (Class_Trace_List_Poniter[i1].FuncList[i2] != NULL) {
-                    php_printf("&nbsp; &nbsp; Function Name %s<br />\n",Class_Trace_List_Poniter[i1].FuncList[i2]->funcName);
-                   // printf("%x\n", Class_Trace_List_Poniter[i1].FuncList[i2]->classFuncId);
+                    php_printf(
+                            "&nbsp; &nbsp; Function Name %s  &nbsp; Called Total :%d &nbsp; CPU Time : %f &nbsp; Memory : %d Byte &nbsp; Peak Memory: %d Byte <br />\n",
+                            Class_Trace_List_Poniter[i1].FuncList[i2]->funcName,
+                            Class_Trace_List_Poniter[i1].FuncList[i2]->refCount,
+                            Class_Trace_List_Poniter[i1].FuncList[i2]->useCpuTime,
+                            Class_Trace_List_Poniter[i1].FuncList[i2]->useMemory,
+                            Class_Trace_List_Poniter[i1].FuncList[i2]->useMemoryPeak
+                    );
+                    // printf("%x\n", Class_Trace_List_Poniter[i1].FuncList[i2]->classFuncId);
                 }
 
             }
