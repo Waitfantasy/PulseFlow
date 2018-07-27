@@ -437,6 +437,8 @@ Trace_Performance_End(Class_Trace_Data *classPointer, Func_Trace_Data *funcPoint
     funcPointer->useCpuTime += (getLinuxTimeUse(&funcPointer->CpuTimeStart TSRMLS_CC));
     funcPointer->useMemory += (zend_memory_usage(0 TSRMLS_CC) - funcPointer->useMemoryStart);
     funcPointer->useMemoryPeak += (zend_memory_peak_usage(0 TSRMLS_CC) - funcPointer->useMemoryPeakStart);
+
+    classPointer->memoryUse += funcPointer->useMemory;
 }
 
 static zend_always_inline void PrintClassStruct(TSRMLS_D) {
@@ -446,16 +448,18 @@ static zend_always_inline void PrintClassStruct(TSRMLS_D) {
     int i1;
     for (i1 = 0; i1 < current_Count; ++i1) {
         if (Class_Trace_List_Poniter[i1].className != NULL) {
-            php_printf("Class Name %s have %d functions  Called Total %d<br />\n",
+            php_printf("Class Name %s have %d functions  Called Total %d Memory use: %d byte<br />\n",
                        Class_Trace_List_Poniter[i1].className,
-                       Class_Trace_List_Poniter[i1].funcCount, Class_Trace_List_Poniter[i1].refCount);
+                       Class_Trace_List_Poniter[i1].funcCount,
+                       Class_Trace_List_Poniter[i1].refCount,
+                       Class_Trace_List_Poniter[i1].memoryUse);
 
             int i2;
             int funclen = Class_Trace_List_Poniter[i1].funcCount;
             for (i2 = 0; i2 < funclen; ++i2) {
                 if (Class_Trace_List_Poniter[i1].FuncList[i2] != NULL) {
                     php_printf(
-                            "&nbsp; &nbsp; Function Name %s  &nbsp; Called Total :%d &nbsp; CPU Time : %f &nbsp; Memory : %d Byte &nbsp; Peak Memory: %d Byte <br />\n",
+                            "&nbsp; &nbsp; Function Name %s  &nbsp; Called Total :%d &nbsp; CPU Time : %f ms &nbsp; Memory : %d Byte &nbsp; Peak Memory: %d Byte <br />\n",
                             Class_Trace_List_Poniter[i1].FuncList[i2]->funcName,
                             Class_Trace_List_Poniter[i1].FuncList[i2]->refCount,
                             Class_Trace_List_Poniter[i1].FuncList[i2]->useCpuTime,
@@ -469,6 +473,4 @@ static zend_always_inline void PrintClassStruct(TSRMLS_D) {
 
         }
     }
-
-    php_printf("\nEnd\n");
 }

@@ -56,6 +56,7 @@ struct Class_Trace_Struct {
     int funcCount; //当前使用的单元数
     int funcMemoryCount;  //为FuncList分配的总单元数
     Func_Trace_Data **FuncList;
+    size_t memoryUse;
     char *className;
 };
 
