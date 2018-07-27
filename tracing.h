@@ -431,14 +431,14 @@ void PrintClassStruct(TSRMLS_D) {
     int i1;
     for (i1 = 0; i1 < current_Count; ++i1) {
         if (Class_Trace_List_Poniter[i1].className != NULL) {
-            printf("Class Name %s<br /> have %d functions\n", Class_Trace_List_Poniter[i1].className,
+            php_printf("Class Name %s<br /> have %d functions\n", Class_Trace_List_Poniter[i1].className,
                    Class_Trace_List_Poniter[i1].funcCount);
 
             int i2;
             int funclen = Class_Trace_List_Poniter[i1].funcCount;
             for (i2 = 0; i2 < funclen; ++i2) {
                 if (Class_Trace_List_Poniter[i1].FuncList[i2] != NULL) {
-                     printf("&nbsp; &nbsp; Function Name %s<br />\n",Class_Trace_List_Poniter[i1].FuncList[i2]->funcName);
+                    php_printf("&nbsp; &nbsp; Function Name %s<br />\n",Class_Trace_List_Poniter[i1].FuncList[i2]->funcName);
                    // printf("%x\n", Class_Trace_List_Poniter[i1].FuncList[i2]->classFuncId);
                 }
 
@@ -447,5 +447,5 @@ void PrintClassStruct(TSRMLS_D) {
         }
     }
 
-    printf("\nEnd\n");
+    php_printf("\nEnd\n");
 }
