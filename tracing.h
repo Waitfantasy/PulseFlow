@@ -37,7 +37,7 @@ static zend_always_inline zend_string *tracing_get_function_name(zend_execute_da
     return curr_func->common.function_name;
 }
 
-static zend_always_inline float timedifference_msec(struct timeval *t0 , struct timeval *t1 TSRMLS_DC) {
+static zend_always_inline float timedifference_msec(struct timeval *t0, struct timeval *t1 TSRMLS_DC) {
 
     return ((*t1).tv_sec - (*t0).tv_sec) * 1000.0f + ((*t1).tv_usec - (*t0).tv_usec) / 1000.0f;
 
@@ -55,7 +55,7 @@ static zend_always_inline float getLinuxTimeUse(struct timeval *begin TSRMLS_DC)
 
     getlinuxTime(&end TSRMLS_CC);
 
-    return timedifference_msec(begin , &end TSRMLS_CC);
+    return timedifference_msec(begin, &end TSRMLS_CC);
 
 }
 
@@ -87,7 +87,7 @@ static zend_always_inline void INIT_disable_trace_functions_hash(TSRMLS_D) {
 
             zend_string *hash_str = zend_string_init(blockFunctionList, strlen(blockFunctionList), 0);
 
-            if (!zend_hash_exists(PULSEFLOW_G(disable_trace_functions_hash),hash_str)) {
+            if (!zend_hash_exists(PULSEFLOW_G(disable_trace_functions_hash), hash_str)) {
 
                 zend_hash_add(PULSEFLOW_G(disable_trace_functions_hash), hash_str, &zv
                         ZEND_FILE_LINE_CC);
@@ -124,7 +124,7 @@ static zend_always_inline void INIT_disable_trace_class_hash(TSRMLS_D) {
 
             zend_string *hash_str = zend_string_init(blockFunctionList, strlen(blockFunctionList), 0);
 
-            if (!zend_hash_exists(PULSEFLOW_G(disable_trace_class_hash),hash_str)) {
+            if (!zend_hash_exists(PULSEFLOW_G(disable_trace_class_hash), hash_str)) {
 
                 zend_hash_add(PULSEFLOW_G(disable_trace_class_hash), hash_str, &zv
                         ZEND_FILE_LINE_CC);
@@ -143,4 +143,113 @@ static zend_always_inline void FREE_disable_trace_class_hash(TSRMLS_D) {
 
     FREE_HASHTABLE(PULSEFLOW_G(disable_trace_class_hash));
 
+}
+
+static zend_always_inline void INIT_Class_Trace_Struct(TSRMLS_D) {
+
+    PULSEFLOW_G(Class_Trace_List) = NULL;
+
+    PULSEFLOW_G(Class_Trace_Current_Size) = 0;
+
+    PULSEFLOW_G(Class_Trace_Total_Size) = 0;
+
+}
+
+static zend_always_inline Class_Trace_Data *Trace_Class_Pointer(zend_string *className TSRMLS_DC) {
+
+    Class_Trace_Data *retPoint = NULL;
+
+    int current_Count = PULSEFLOW_G(Class_Trace_Current_Size);
+    int total_Count = PULSEFLOW_G(Class_Trace_Total_Size);
+
+    Class_Trace_Data *Class_Trace_List_Poniter = PULSEFLOW_G(Class_Trace_List);
+
+    int classNameLen = className->len;
+
+    int i;
+    for (i = 0; i < current_Count; ++i) {
+        //从第一个CLASS全局数组开始找Class名相同的指针结构体元素
+
+        if (strcmp(Class_Trace_List_Poniter[i].className, className->val) == 0) {
+            retPoint = Class_Trace_List_Poniter + i;
+        }
+
+    }
+
+    if (retPoint == NULL) {
+
+        //没有找到对应名称的类结构体指针，进行current_class_count 与 Total_class_count 判断
+        if (current_Count == total_Count) {
+            //结构体数组空间已经不够使用 进行空间扩容
+            total_Count += CLASS_TRACE_RESIZE_STEP;
+
+            //严格注意内存重新分配可能造成的内存泄露 此处为了避免 relloc造成的内存泄露
+            Class_Trace_Data *New_Class_Trace_List = (Class_Trace_Data *) realloc(Class_Trace_List_Poniter,
+                                                                                  sizeof(Class_Trace_Data) *
+                                                                                  total_Count);
+            if (New_Class_Trace_List != NULL) {
+
+                PULSEFLOW_G(Class_Trace_List) = New_Class_Trace_List;
+                PULSEFLOW_G(Class_Trace_Total_Size) = total_Count;
+                Class_Trace_List_Poniter = New_Class_Trace_List;
+
+            } else {
+
+                total_Count -= CLASS_TRACE_RESIZE_STEP;
+
+            }
+
+        }
+
+        if (current_Count < total_Count) {
+
+            Class_Trace_List_Poniter[current_Count].refCount = 0;
+            Class_Trace_List_Poniter[current_Count].funcCount = 0;
+            Class_Trace_List_Poniter[current_Count].funcMemoryCount = 0;
+            Class_Trace_List_Poniter[current_Count].FuncList = NULL;
+
+            //当前结构体内存大小足够使用，进行填充
+            // free(Class_Trace_List[current_Count].className);  //释放内存 避免内存区异常数据区 此处代码存在破坏内存区数据的风险
+            Class_Trace_List_Poniter[current_Count].className = malloc(sizeof(char) * (classNameLen + 1));
+            strncpy(Class_Trace_List_Poniter[current_Count].className, className->val, classNameLen); //使用strcpy安全函数
+            Class_Trace_List_Poniter[current_Count].className[classNameLen] = '\0';
+
+            retPoint = Class_Trace_List_Poniter + current_Count;
+
+            //成功初始化一个类结构体元素 所以current_Count 自 加 1， 并对全局变量Class_Trace_Current_Size 进行重新赋值
+            current_Count++;
+            PULSEFLOW_G(Class_Trace_Current_Size) = current_Count;
+        }
+
+    }
+
+    return retPoint;
+}
+
+static zend_always_inline Class_Trace_Data *Trace_Clean_Class_Struct(TSRMLS_D) {
+    int current_Count = PULSEFLOW_G(Class_Trace_Current_Size);
+    int total_Count = PULSEFLOW_G(Class_Trace_Total_Size);
+
+    Class_Trace_Data *Class_Trace_List_Poniter = PULSEFLOW_G(Class_Trace_List);
+
+    if (Class_Trace_List_Poniter != NULL) {
+        int i;
+        for (i = 0; i < current_Count; ++i) {
+            //className Malloc free
+            if (Class_Trace_List_Poniter[i].className != NULL) {
+                free(Class_Trace_List_Poniter[i].className);
+            }
+
+            //FuncList Malloc free
+            if (Class_Trace_List_Poniter[i].FuncList != NULL) {
+                free(Class_Trace_List_Poniter[i].FuncList);
+            }
+        }
+
+        free(Class_Trace_List_Poniter);
+
+        //这句代码默认是不需要的，为了避免zend引擎内部可能存在的未知错误 如果裸露运行Linux 内部 则不需要
+        PULSEFLOW_G(Class_Trace_Current_Size) = 0;
+        PULSEFLOW_G(Class_Trace_Total_Size) = 0;
+    }
 }

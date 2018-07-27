@@ -43,6 +43,31 @@ extern zend_module_entry PulseFlow_module_entry;
 	and END macros here:
 */
 
+
+typedef struct Class_Trace_Struct Class_Trace_Data;
+typedef struct Func_Trace_Struct Func_Trace_Data;
+
+#define CLASS_TRACE_RESIZE_STEP 5
+
+#define FUNC_TRACE_RESIZE_STEP 10
+
+struct Class_Trace_Struct {
+    int refCount;
+    int funcCount;
+    int funcMemoryCount;
+    Func_Trace_Data *FuncList;
+    char *className;
+};
+
+struct Func_Trace_Struct {
+    float useCpuTime;
+    unsigned int useMemory;
+    unsigned int useMemoryPeak;
+    int refCount;
+    Class_Trace_Data *ClassAddr;
+    char *funcName;
+};
+
 ZEND_BEGIN_MODULE_GLOBALS(PulseFlow)
     zend_bool enabled;
     zend_bool debug;
@@ -52,6 +77,12 @@ ZEND_BEGIN_MODULE_GLOBALS(PulseFlow)
 
     char *disable_trace_class;
     HashTable *disable_trace_class_hash;
+
+    Class_Trace_Data *Class_Trace_List;
+    int Class_Trace_Current_Size;
+    int Class_Trace_Total_Size;
+
+    Func_Trace_Data *Func_Trace_List;
 ZEND_END_MODULE_GLOBALS(PulseFlow)
 
 

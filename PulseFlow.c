@@ -112,6 +112,10 @@ ZEND_DLEXPORT void PulseFlow_xhprof_execute_ex(zend_execute_data *execute_data) 
                 _zend_execute_ex(execute_data TSRMLS_CC);
 
             } else {
+                // funcName and ClassName all not NULL
+                Class_Trace_Data *classPointer = Trace_Class_Pointer(className);
+                printf("%s\n",classPointer->className);
+
                 struct timeval t0;
                 getlinuxTime(&t0 TSRMLS_CC);
 
@@ -149,6 +153,9 @@ PHP_RINIT_FUNCTION (PulseFlow) {
 
     INIT_disable_trace_class_hash(TSRMLS_C);
 
+
+    INIT_Class_Trace_Struct();
+
     return SUCCESS;
 }
 
@@ -157,6 +164,8 @@ PHP_RSHUTDOWN_FUNCTION (PulseFlow) {
     FREE_disable_trace_functions_hash(TSRMLS_C);
 
     FREE_disable_trace_class_hash(TSRMLS_C);
+
+    Trace_Clean_Class_Struct(TSRMLS_C);
 
     return SUCCESS;
 
