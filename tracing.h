@@ -431,7 +431,7 @@ void PrintClassStruct(TSRMLS_D) {
     int i1;
     for (i1 = 0; i1 < current_Count; ++i1) {
         if (Class_Trace_List_Poniter[i1].className != NULL) {
-            php_printf("Class Name %s<br /> have %d functions\n", Class_Trace_List_Poniter[i1].className,
+            php_printf("Class Name %s have %d functions <br />\n", Class_Trace_List_Poniter[i1].className,
                    Class_Trace_List_Poniter[i1].funcCount);
 
             int i2;
