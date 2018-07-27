@@ -225,6 +225,7 @@ static zend_always_inline Class_Trace_Data *Trace_Class_Pointer(zend_string *cla
             Class_Trace_List_Poniter[current_Count].funcCount = 0;
             Class_Trace_List_Poniter[current_Count].funcMemoryCount = 0;
             Class_Trace_List_Poniter[current_Count].memoryUse =0;
+            Class_Trace_List_Poniter[current_Count].CpuTimeUse = 0;
             Class_Trace_List_Poniter[current_Count].FuncList = NULL;
 
             //当前结构体内存大小足够使用，进行填充
@@ -439,6 +440,7 @@ Trace_Performance_End(Class_Trace_Data *classPointer, Func_Trace_Data *funcPoint
     funcPointer->useMemory += (zend_memory_usage(0 TSRMLS_CC) - funcPointer->useMemoryStart);
     funcPointer->useMemoryPeak += (zend_memory_peak_usage(0 TSRMLS_CC) - funcPointer->useMemoryPeakStart);
 
+    classPointer->CpuTimeUse+= funcPointer->useCpuTime;
     classPointer->memoryUse += funcPointer->useMemory;
 }
 
@@ -449,9 +451,10 @@ static zend_always_inline void PrintClassStruct(TSRMLS_D) {
     int i1;
     for (i1 = 0; i1 < current_Count; ++i1) {
         if (Class_Trace_List_Poniter[i1].className != NULL) {
-            php_printf("Class Name %s have %d functions  Called Total %d Memory use: %d byte<br />\n",
+            php_printf("Class Name %s have %d functions &nbsp; CPU Time : %f ms &nbsp; Called Total %d Memory use: %d byte<br />\n",
                        Class_Trace_List_Poniter[i1].className,
                        Class_Trace_List_Poniter[i1].funcCount,
+                       Class_Trace_List_Poniter[i1].CpuTimeUse,
                        Class_Trace_List_Poniter[i1].refCount,
                        Class_Trace_List_Poniter[i1].memoryUse);
 
