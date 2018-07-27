@@ -114,7 +114,7 @@ ZEND_DLEXPORT void PulseFlow_xhprof_execute_ex(zend_execute_data *execute_data) 
             } else {
                 // funcName and ClassName all not NULL
                 Class_Trace_Data *classPointer = Trace_Class_Pointer(className);
-                printf("%s\n",classPointer->className);
+                php_printf("%s<br />\n",classPointer->className);
 
                 struct timeval t0;
                 getlinuxTime(&t0 TSRMLS_CC);
