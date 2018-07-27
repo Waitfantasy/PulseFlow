@@ -64,6 +64,7 @@ struct Func_Trace_Struct {
     float useCpuTime;
     unsigned int useMemory;
     unsigned int useMemoryPeak;
+    unsigned int classFuncId;
     int refCount;
     Class_Trace_Data *ClassAddr;
     char *funcName;

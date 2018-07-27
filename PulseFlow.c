@@ -118,8 +118,7 @@ ZEND_DLEXPORT void PulseFlow_xhprof_execute_ex(zend_execute_data *execute_data) 
                 if (classPointer != NULL){
                     //在Class Ponter基础上进行 函数 扩充
                     Func_Trace_Data *funcPointer = Trace_Class_Function_Pointer(classPointer,funcName);
-                    php_printf("%s<br />\n",funcPointer->funcName);
-                    php_printf("%x<br />\n",funcPointer->ClassAddr);
+
                 }
 
                 struct timeval t0;
@@ -166,14 +165,17 @@ PHP_RINIT_FUNCTION (PulseFlow) {
 }
 
 PHP_RSHUTDOWN_FUNCTION (PulseFlow) {
+    PrintClassStruct(TSRMLS_C);
 
     FREE_disable_trace_functions_hash(TSRMLS_C);
 
     FREE_disable_trace_class_hash(TSRMLS_C);
 
+
     Trace_Clean_Class_Struct(TSRMLS_C);
 
     Trace_Clean_Func_Struct(TSRMLS_C);
+
     return SUCCESS;
 
 }

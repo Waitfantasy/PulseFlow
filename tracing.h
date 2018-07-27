@@ -200,6 +200,17 @@ static zend_always_inline Class_Trace_Data *Trace_Class_Pointer(zend_string *cla
                 PULSEFLOW_G(Class_Trace_Total_Size) = total_Count;
                 Class_Trace_List_Poniter = New_Class_Trace_List;
 
+                // 重新分配内存后 循环更新 类 内部的所有函数的 指针体内的 classAddr  超级重点之一
+                int i;
+                for (i = 0; i < current_Count; ++i) {
+                    int funcloop = Class_Trace_List_Poniter[i].funcCount;
+                    int i2;
+                    for (i2 = 0; i2 < funcloop; ++i2) {
+                        Class_Trace_List_Poniter[i].FuncList[i2]->ClassAddr = Class_Trace_List_Poniter + i;
+                    }
+                }
+
+
             } else {
 
                 total_Count -= CLASS_TRACE_RESIZE_STEP;
@@ -301,6 +312,13 @@ Trace_Class_Function_Pointer(Class_Trace_Data *classPointer, zend_string *funcNa
                 PULSEFLOW_G(Func_Trace_Total_Size) = total_Count;
                 Func_Trace_List_Poniter = New_Func_Trace_List;
 
+                // 修改点2  :如果函数内存被重新分配，则需要通知所有函数所属的类指针中的 函数指针数组进行更新数据 否则会造成指向错误
+                int i;
+                for (i = 0; i < current_Count; ++i) {
+                    int funcId = Func_Trace_List_Poniter[i].classFuncId;
+                    Func_Trace_List_Poniter[i].ClassAddr->FuncList[funcId] = Func_Trace_List_Poniter+i;
+                }
+
             } else {
 
                 total_Count -= FUNC_TRACE_RESIZE_STEP;
@@ -311,12 +329,13 @@ Trace_Class_Function_Pointer(Class_Trace_Data *classPointer, zend_string *funcNa
 
         if (current_Count < total_Count) {
             //当前结构体内存大小足够使用，进行填充
-           // Func_Trace_List_Poniter[current_Count].t = {0,0};
+            // Func_Trace_List_Poniter[current_Count].t = {0,0};
             Func_Trace_List_Poniter[current_Count].useCpuTime = 0;
             Func_Trace_List_Poniter[current_Count].useMemory = 0;
             Func_Trace_List_Poniter[current_Count].useMemoryPeak = 0;
             Func_Trace_List_Poniter[current_Count].refCount = 0;
             Func_Trace_List_Poniter[current_Count].ClassAddr = classPointer;
+            Func_Trace_List_Poniter[current_Count].classFuncId = classPointer->funcCount;
 
             Func_Trace_List_Poniter[current_Count].funcName = malloc(sizeof(char) * (funcNameLen + 1));
             strncpy(Func_Trace_List_Poniter[current_Count].funcName, funcName->val, funcNameLen); //使用strcpy安全函数
@@ -339,8 +358,8 @@ Trace_Class_Function_Pointer(Class_Trace_Data *classPointer, zend_string *funcNa
                 Class_Func_Total_Count += FUNC_TRACE_RESIZE_STEP;
 
                 Func_Trace_Data **New_Class_Func_Trace_List = (Func_Trace_Data **) realloc(Class_Func_Trace_List,
-                                                                                         sizeof(Func_Trace_Data*) *
-                                                                                         Class_Func_Total_Count);
+                                                                                           sizeof(Func_Trace_Data *) *
+                                                                                           Class_Func_Total_Count);
 
                 if (New_Class_Func_Trace_List != NULL) {
 
@@ -356,10 +375,10 @@ Trace_Class_Function_Pointer(Class_Trace_Data *classPointer, zend_string *funcNa
 
             }
 
-            if(Class_Func_Current_Count < Class_Func_Total_Count){
+            if (Class_Func_Current_Count < Class_Func_Total_Count) {
                 //空间足够 可以进行元素添加
 
-                Class_Func_Trace_List[Class_Func_Current_Count]  = retPoint;
+                Class_Func_Trace_List[Class_Func_Current_Count] = retPoint;
 
                 Class_Func_Current_Count++;
 
@@ -402,4 +421,31 @@ static zend_always_inline Class_Trace_Data *Trace_Clean_Func_Struct(TSRMLS_D) {
         PULSEFLOW_G(Func_Trace_Current_Size) = 0;
         PULSEFLOW_G(Func_Trace_Total_Size) = 0;
     }
+}
+
+
+void PrintClassStruct(TSRMLS_D) {
+    int current_Count = PULSEFLOW_G(Class_Trace_Current_Size);
+
+    Class_Trace_Data *Class_Trace_List_Poniter = PULSEFLOW_G(Class_Trace_List);
+    int i1;
+    for (i1 = 0; i1 < current_Count; ++i1) {
+        if (Class_Trace_List_Poniter[i1].className != NULL) {
+            printf("Class Name %s<br /> have %d functions\n", Class_Trace_List_Poniter[i1].className,
+                   Class_Trace_List_Poniter[i1].funcCount);
+
+            int i2;
+            int funclen = Class_Trace_List_Poniter[i1].funcCount;
+            for (i2 = 0; i2 < funclen; ++i2) {
+                if (Class_Trace_List_Poniter[i1].FuncList[i2] != NULL) {
+                     printf("&nbsp; &nbsp; Function Name %s<br />\n",Class_Trace_List_Poniter[i1].FuncList[i2]->funcName);
+                   // printf("%x\n", Class_Trace_List_Poniter[i1].FuncList[i2]->classFuncId);
+                }
+
+            }
+
+        }
+    }
+
+    printf("\nEnd\n");
 }
