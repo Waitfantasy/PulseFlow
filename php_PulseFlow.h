@@ -53,13 +53,14 @@ typedef struct Func_Trace_Struct Func_Trace_Data;
 
 struct Class_Trace_Struct {
     int refCount;
-    int funcCount;
-    int funcMemoryCount;
-    Func_Trace_Data *FuncList;
+    int funcCount; //当前使用的单元数
+    int funcMemoryCount;  //为FuncList分配的总单元数
+    Func_Trace_Data **FuncList;
     char *className;
 };
 
 struct Func_Trace_Struct {
+    struct timeval t;
     float useCpuTime;
     unsigned int useMemory;
     unsigned int useMemoryPeak;
@@ -83,6 +84,8 @@ ZEND_BEGIN_MODULE_GLOBALS(PulseFlow)
     int Class_Trace_Total_Size;
 
     Func_Trace_Data *Func_Trace_List;
+    int Func_Trace_Current_Size;
+    int Func_Trace_Total_Size;
 ZEND_END_MODULE_GLOBALS(PulseFlow)
 
 

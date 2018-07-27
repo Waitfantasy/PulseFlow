@@ -153,6 +153,12 @@ static zend_always_inline void INIT_Class_Trace_Struct(TSRMLS_D) {
 
     PULSEFLOW_G(Class_Trace_Total_Size) = 0;
 
+    PULSEFLOW_G(Func_Trace_List) = NULL;
+
+    PULSEFLOW_G(Func_Trace_Current_Size) = 0;
+
+    PULSEFLOW_G(Func_Trace_Total_Size) = 0;
+
 }
 
 static zend_always_inline Class_Trace_Data *Trace_Class_Pointer(zend_string *className TSRMLS_DC) {
@@ -172,6 +178,7 @@ static zend_always_inline Class_Trace_Data *Trace_Class_Pointer(zend_string *cla
 
         if (strcmp(Class_Trace_List_Poniter[i].className, className->val) == 0) {
             retPoint = Class_Trace_List_Poniter + i;
+            break;
         }
 
     }
@@ -228,7 +235,6 @@ static zend_always_inline Class_Trace_Data *Trace_Class_Pointer(zend_string *cla
 
 static zend_always_inline Class_Trace_Data *Trace_Clean_Class_Struct(TSRMLS_D) {
     int current_Count = PULSEFLOW_G(Class_Trace_Current_Size);
-    int total_Count = PULSEFLOW_G(Class_Trace_Total_Size);
 
     Class_Trace_Data *Class_Trace_List_Poniter = PULSEFLOW_G(Class_Trace_List);
 
@@ -251,5 +257,149 @@ static zend_always_inline Class_Trace_Data *Trace_Clean_Class_Struct(TSRMLS_D) {
         //这句代码默认是不需要的，为了避免zend引擎内部可能存在的未知错误 如果裸露运行Linux 内部 则不需要
         PULSEFLOW_G(Class_Trace_Current_Size) = 0;
         PULSEFLOW_G(Class_Trace_Total_Size) = 0;
+    }
+}
+
+
+static zend_always_inline Func_Trace_Data *
+Trace_Class_Function_Pointer(Class_Trace_Data *classPointer, zend_string *funcName TSRMLS_DC) {
+
+    Func_Trace_Data *retPoint = NULL;
+
+    int current_Count = PULSEFLOW_G(Func_Trace_Current_Size);
+    int total_Count = PULSEFLOW_G(Func_Trace_Total_Size);
+
+    Func_Trace_Data *Func_Trace_List_Poniter = PULSEFLOW_G(Func_Trace_List);
+
+    int funcNameLen = funcName->len;
+
+    int i;
+    for (i = 0; i < current_Count; ++i) {
+        //从第一个FUNC全局数组开始找FUNC名相同的指针结构体元素
+
+        if ((strcmp(Func_Trace_List_Poniter[i].funcName, funcName->val) == 0) &&
+            (Func_Trace_List_Poniter[i].ClassAddr == classPointer)) {
+            //在全局函数指针列表中找到了这个函数，则进行指针赋值
+            retPoint = Func_Trace_List_Poniter + i;
+            break;
+        }
+
+    }
+
+    if (retPoint == NULL) {
+        //没有在全局函数列表中找到，则进行内存分配 并 进行全局 函数列表 类函数结构体中的函数指针列表赋值
+        if (current_Count == total_Count) {
+
+            total_Count += FUNC_TRACE_RESIZE_STEP;
+
+            Func_Trace_Data *New_Func_Trace_List = (Func_Trace_Data *) realloc(Func_Trace_List_Poniter,
+                                                                               sizeof(Func_Trace_Data) *
+                                                                               total_Count);
+            if (New_Func_Trace_List != NULL) {
+
+                PULSEFLOW_G(Func_Trace_List) = New_Func_Trace_List;
+                PULSEFLOW_G(Func_Trace_Total_Size) = total_Count;
+                Func_Trace_List_Poniter = New_Func_Trace_List;
+
+            } else {
+
+                total_Count -= FUNC_TRACE_RESIZE_STEP;
+
+            }
+
+        }
+
+        if (current_Count < total_Count) {
+            //当前结构体内存大小足够使用，进行填充
+           // Func_Trace_List_Poniter[current_Count].t = {0,0};
+            Func_Trace_List_Poniter[current_Count].useCpuTime = 0;
+            Func_Trace_List_Poniter[current_Count].useMemory = 0;
+            Func_Trace_List_Poniter[current_Count].useMemoryPeak = 0;
+            Func_Trace_List_Poniter[current_Count].refCount = 0;
+            Func_Trace_List_Poniter[current_Count].ClassAddr = classPointer;
+
+            Func_Trace_List_Poniter[current_Count].funcName = malloc(sizeof(char) * (funcNameLen + 1));
+            strncpy(Func_Trace_List_Poniter[current_Count].funcName, funcName->val, funcNameLen); //使用strcpy安全函数
+            Func_Trace_List_Poniter[current_Count].funcName[funcNameLen] = '\0';
+
+            //至此 已经完成函数结构体内存全部分配 ，但是没有完全构造链接化
+
+            retPoint = Func_Trace_List_Poniter + current_Count;
+
+            //和类 struct进行结合结合
+            Func_Trace_Data **Class_Func_Trace_List = classPointer->FuncList;
+
+            int Class_Func_Current_Count = classPointer->funcCount;
+
+            int Class_Func_Total_Count = classPointer->funcMemoryCount;
+
+            if (Class_Func_Current_Count == Class_Func_Total_Count) {
+                //如果当前数组空间不够用 内存空间扩充
+
+                Class_Func_Total_Count += FUNC_TRACE_RESIZE_STEP;
+
+                Func_Trace_Data **New_Class_Func_Trace_List = (Func_Trace_Data **) realloc(Class_Func_Trace_List,
+                                                                                         sizeof(Func_Trace_Data*) *
+                                                                                         Class_Func_Total_Count);
+
+                if (New_Class_Func_Trace_List != NULL) {
+
+                    classPointer->FuncList = New_Class_Func_Trace_List;
+                    classPointer->funcMemoryCount = Class_Func_Total_Count;
+                    Class_Func_Trace_List = New_Class_Func_Trace_List;
+
+                } else {
+
+                    Class_Func_Total_Count -= FUNC_TRACE_RESIZE_STEP;
+
+                }
+
+            }
+
+            if(Class_Func_Current_Count < Class_Func_Total_Count){
+                //空间足够 可以进行元素添加
+
+                Class_Func_Trace_List[Class_Func_Current_Count]  = retPoint;
+
+                Class_Func_Current_Count++;
+
+                classPointer->funcCount = Class_Func_Current_Count;
+            }
+
+
+
+
+            //成功初始化一个类结构体元素 所以current_Count 自 加 1， 并对全局变量Class_Trace_Current_Size 进行重新赋值
+            current_Count++;
+            PULSEFLOW_G(Func_Trace_Current_Size) = current_Count;
+        }
+
+
+    }
+
+
+    return retPoint;
+}
+
+static zend_always_inline Class_Trace_Data *Trace_Clean_Func_Struct(TSRMLS_D) {
+    int current_Count = PULSEFLOW_G(Func_Trace_Current_Size);
+
+    Func_Trace_Data *Func_Trace_List_Poniter = PULSEFLOW_G(Func_Trace_List);
+
+    if (Func_Trace_List_Poniter != NULL) {
+        int i;
+        for (i = 0; i < current_Count; ++i) {
+            //funcName Malloc free
+            if (Func_Trace_List_Poniter[i].funcName != NULL) {
+                free(Func_Trace_List_Poniter[i].funcName);
+            }
+
+        }
+
+        free(Func_Trace_List_Poniter);
+
+        //这句代码默认是不需要的，为了避免zend引擎内部可能存在的未知错误 如果裸露运行Linux 内部 则不需要
+        PULSEFLOW_G(Func_Trace_Current_Size) = 0;
+        PULSEFLOW_G(Func_Trace_Total_Size) = 0;
     }
 }
