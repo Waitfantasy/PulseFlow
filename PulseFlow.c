@@ -227,13 +227,13 @@ PHP_MINFO_FUNCTION (PulseFlow) {
 
 }
 
-PHP_FUNCTION (PulseFlow_Enabled) {
+PHP_FUNCTION (pulseflow_enable) {
 
     PULSEFLOW_G(enabled) = 1;
 
 }
 
-PHP_FUNCTION (PulseFLow_Disable){
+PHP_FUNCTION (pulseflow_disable) {
 
     PULSEFLOW_G(enabled) = 0;
 
@@ -241,8 +241,8 @@ PHP_FUNCTION (PulseFLow_Disable){
 
 
 const zend_function_entry PulseFlow_functions[] = {
-        PHP_FE(PulseFlow_Enabled,NULL)
-        PHP_FE(PulseFLow_Disable,NULL)
+        PHP_FE(pulseflow_enable, NULL)
+        PHP_FE(pulseflow_disable, NULL)
         PHP_FE_END /* Must be the last line in PulseFlow_functions[] */
 };
 
