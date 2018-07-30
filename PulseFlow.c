@@ -191,10 +191,11 @@ PHP_RSHUTDOWN_FUNCTION (PulseFlow) {
 
 }
 
-static int PulseFlow_info_print(const char *str) /* {{{ */
+static zend_always_inline int PulseFlow_info_print(const char *str) /* {{{ */
 {
     return php_output_write(str, strlen(str));
 }
+
 
 PHP_MINFO_FUNCTION (PulseFlow) {
     php_info_print_table_start();
@@ -226,8 +227,22 @@ PHP_MINFO_FUNCTION (PulseFlow) {
 
 }
 
+PHP_FUNCTION (PulseFlow_Enabled) {
+
+    PULSEFLOW_G(enabled) = 1;
+
+}
+
+PHP_FUNCTION (PulseFLow_Disable){
+
+    PULSEFLOW_G(enabled) = 0;
+
+}
+
+
 const zend_function_entry PulseFlow_functions[] = {
-//PHP_FE(confirm_PulseFlow_compiled,	NULL)		/* For testing, remove later. */
+        PHP_FE(PulseFlow_Enabled,NULL)
+        PHP_FE(PulseFLow_Disable,NULL)
         PHP_FE_END /* Must be the last line in PulseFlow_functions[] */
 };
 
@@ -247,24 +262,3 @@ ZEND_TSRMLS_CACHE_DEFINE()
 #endif
 ZEND_GET_MODULE(PulseFlow)
 #endif
-
-//PHP_FUNCTION (confirm_PulseFlow_compiled) {
-//
-//    char *arg = NULL;
-//
-//    size_t arg_len, len;
-//
-//    zend_string *strg;
-//
-//    if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &arg, &arg_len)
-//        == FAILURE) {
-//        return;
-//    }
-//
-//    strg =
-//            strpprintf(0,
-//                       "Congrsatulations! You have successfully modified ext/%.78s/config.m4. Module %.78s is now compiled into PHP.",
-//                       "PulseFlow", arg);
-//
-//    RETURN_STR(strg);
-//}
