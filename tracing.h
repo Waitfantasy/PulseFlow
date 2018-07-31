@@ -90,7 +90,7 @@ static zend_always_inline void INIT_disable_trace_functions_hash(TSRMLS_D) {
             if (!zend_hash_exists(PULSEFLOW_G(disable_trace_functions_hash), hash_str)) {
 
                 zend_hash_add(PULSEFLOW_G(disable_trace_functions_hash), hash_str,
-                              &zv ZEND_FILE_LINE_CC); //修改点1： ZEND_FILE_LINE_CC
+                              &zv /*ZEND_FILE_LINE_CC */); //修改点1： ZEND_FILE_LINE_CC
             }
 
             zend_string_release(hash_str);
@@ -128,8 +128,10 @@ static zend_always_inline void INIT_disable_trace_class_hash(TSRMLS_D) {
             if (!zend_hash_exists(PULSEFLOW_G(disable_trace_class_hash), hash_str)) {
 
                 zend_hash_add(PULSEFLOW_G(disable_trace_class_hash), hash_str,
-                              &zv ZEND_FILE_LINE_CC); //修改点2：ZEND_FILE_LINE_CC
+                              &zv /*ZEND_FILE_LINE_CC */); //修改点2：ZEND_FILE_LINE_CC
             }
+
+            zend_string_release(hash_str);
 
             blockFunctionList = strtok(NULL, ",");
 
