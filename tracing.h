@@ -1,18 +1,18 @@
 ZEND_DECLARE_MODULE_GLOBALS(PulseFlow)
 
 static zend_always_inline zend_string *tracing_get_class_name(zend_execute_data *data TSRMLS_DC) {
-    zend_function *curr_func;
+    //zend_function *curr_func;
 
     if (!data) {
         return NULL;
     }
 
-    curr_func = data->func;
+    //  curr_func = data->func;
 
-    if (curr_func->common.scope != NULL) {
-        zend_string_addref(curr_func->common.scope->name);
+    if (data->func->common.scope != NULL) {
+        //   zend_string_addref(curr_func->common.scope->name);
 
-        return curr_func->common.scope->name;
+        return data->func->common.scope->name;
     }
 
     return NULL;
@@ -20,21 +20,21 @@ static zend_always_inline zend_string *tracing_get_class_name(zend_execute_data 
 
 
 static zend_always_inline zend_string *tracing_get_function_name(zend_execute_data *data TSRMLS_DC) {
-    zend_function *curr_func;
+    // zend_function *curr_func;
 
     if (!data) {
         return NULL;
     }
 
-    curr_func = data->func;
+    // curr_func = data->func;
 
-    if (!curr_func->common.function_name) {
+    if (!data->func->common.function_name) {
         return NULL;
     }
 
-    zend_string_addref(curr_func->common.function_name);
+    //zend_string_addref(curr_func->common.function_name);
 
-    return curr_func->common.function_name;
+    return data->func->common.function_name;
 }
 
 static zend_always_inline float timedifference_msec(struct timeval *t0, struct timeval *t1 TSRMLS_DC) {
@@ -89,12 +89,10 @@ static zend_always_inline void INIT_disable_trace_functions_hash(TSRMLS_D) {
 
             if (!zend_hash_exists(PULSEFLOW_G(disable_trace_functions_hash), hash_str)) {
 
-                zend_hash_add(PULSEFLOW_G(disable_trace_functions_hash), hash_str, &zv
-                        ZEND_FILE_LINE_CC);
+                zend_hash_add(PULSEFLOW_G(disable_trace_functions_hash), hash_str, &zv ZEND_FILE_LINE_CC); //修改点1： ZEND_FILE_LINE_CC
             }
 
             blockFunctionList = strtok(NULL, ",");
-
         }
 
     }
@@ -126,8 +124,7 @@ static zend_always_inline void INIT_disable_trace_class_hash(TSRMLS_D) {
 
             if (!zend_hash_exists(PULSEFLOW_G(disable_trace_class_hash), hash_str)) {
 
-                zend_hash_add(PULSEFLOW_G(disable_trace_class_hash), hash_str, &zv
-                        ZEND_FILE_LINE_CC);
+                zend_hash_add(PULSEFLOW_G(disable_trace_class_hash), hash_str, &zv ZEND_FILE_LINE_CC); //修改点2：ZEND_FILE_LINE_CC
             }
 
             blockFunctionList = strtok(NULL, ",");
@@ -224,7 +221,7 @@ static zend_always_inline Class_Trace_Data *Trace_Class_Pointer(zend_string *cla
             Class_Trace_List_Poniter[current_Count].refCount = 0;
             Class_Trace_List_Poniter[current_Count].funcCount = 0;
             Class_Trace_List_Poniter[current_Count].funcMemoryCount = 0;
-            Class_Trace_List_Poniter[current_Count].memoryUse =0;
+            Class_Trace_List_Poniter[current_Count].memoryUse = 0;
             Class_Trace_List_Poniter[current_Count].CpuTimeUse = 0;
             Class_Trace_List_Poniter[current_Count].FuncList = NULL;
 
@@ -246,7 +243,7 @@ static zend_always_inline Class_Trace_Data *Trace_Class_Pointer(zend_string *cla
     return retPoint;
 }
 
-static zend_always_inline Class_Trace_Data *Trace_Clean_Class_Struct(TSRMLS_D) {
+static zend_always_inline void Trace_Clean_Class_Struct(TSRMLS_D) {
     int current_Count = PULSEFLOW_G(Class_Trace_Current_Size);
 
     Class_Trace_Data *Class_Trace_List_Poniter = PULSEFLOW_G(Class_Trace_List);
@@ -256,16 +253,23 @@ static zend_always_inline Class_Trace_Data *Trace_Clean_Class_Struct(TSRMLS_D) {
         for (i = 0; i < current_Count; ++i) {
             //className Malloc free
             if (Class_Trace_List_Poniter[i].className != NULL) {
+
                 free(Class_Trace_List_Poniter[i].className);
+                Class_Trace_List_Poniter[i].className = NULL;
+
             }
 
             //FuncList Malloc free
             if (Class_Trace_List_Poniter[i].FuncList != NULL) {
+
                 free(Class_Trace_List_Poniter[i].FuncList);
+                Class_Trace_List_Poniter[i].FuncList = NULL;
+
             }
         }
 
-        free(Class_Trace_List_Poniter);
+        free(PULSEFLOW_G(Class_Trace_List));
+        PULSEFLOW_G(Class_Trace_List) = NULL;
 
         //这句代码默认是不需要的，为了避免zend引擎内部可能存在的未知错误 如果裸露运行Linux 内部 则不需要
         PULSEFLOW_G(Class_Trace_Current_Size) = 0;
@@ -402,7 +406,7 @@ Trace_Class_Function_Pointer(Class_Trace_Data *classPointer, zend_string *funcNa
     return retPoint;
 }
 
-static zend_always_inline Class_Trace_Data *Trace_Clean_Func_Struct(TSRMLS_D) {
+static zend_always_inline void Trace_Clean_Func_Struct(TSRMLS_D) {
     int current_Count = PULSEFLOW_G(Func_Trace_Current_Size);
 
     Func_Trace_Data *Func_Trace_List_Poniter = PULSEFLOW_G(Func_Trace_List);
@@ -411,17 +415,26 @@ static zend_always_inline Class_Trace_Data *Trace_Clean_Func_Struct(TSRMLS_D) {
         int i;
         for (i = 0; i < current_Count; ++i) {
             //funcName Malloc free
-            if (Func_Trace_List_Poniter[i].funcName != NULL) {
-                free(Func_Trace_List_Poniter[i].funcName);
-            }
+            Func_Trace_Data *loopPoint = Func_Trace_List_Poniter + i;
+
+            if (loopPoint == NULL)
+                continue;
+
+            if (loopPoint->funcName == NULL)
+                continue;
+
+            free(loopPoint->funcName);
+
+            loopPoint->funcName = NULL;
 
         }
-
-        free(Func_Trace_List_Poniter);
 
         //这句代码默认是不需要的，为了避免zend引擎内部可能存在的未知错误 如果裸露运行Linux 内部 则不需要
         PULSEFLOW_G(Func_Trace_Current_Size) = 0;
         PULSEFLOW_G(Func_Trace_Total_Size) = 0;
+
+        free(PULSEFLOW_G(Func_Trace_List));
+        PULSEFLOW_G(Func_Trace_List) = NULL;
     }
 }
 
@@ -440,7 +453,7 @@ Trace_Performance_End(Class_Trace_Data *classPointer, Func_Trace_Data *funcPoint
     funcPointer->useMemory += (zend_memory_usage(0 TSRMLS_CC) - funcPointer->useMemoryStart);
     funcPointer->useMemoryPeak += (zend_memory_peak_usage(0 TSRMLS_CC) - funcPointer->useMemoryPeakStart);
 
-    classPointer->CpuTimeUse+= funcPointer->useCpuTime;
+    classPointer->CpuTimeUse += funcPointer->useCpuTime;
     classPointer->memoryUse += funcPointer->useMemory;
 }
 
@@ -451,12 +464,13 @@ static zend_always_inline void PrintClassStruct(TSRMLS_D) {
     int i1;
     for (i1 = 0; i1 < current_Count; ++i1) {
         if (Class_Trace_List_Poniter[i1].className != NULL) {
-            php_printf("Class Name %s have %d functions &nbsp; CPU Time : %f ms &nbsp; Called Total %d Memory use: %d byte<br />\n",
-                       Class_Trace_List_Poniter[i1].className,
-                       Class_Trace_List_Poniter[i1].funcCount,
-                       Class_Trace_List_Poniter[i1].CpuTimeUse,
-                       Class_Trace_List_Poniter[i1].refCount,
-                       Class_Trace_List_Poniter[i1].memoryUse);
+            php_printf(
+                    "Class Name %s have %d functions &nbsp; CPU Time : %f ms &nbsp; Called Total %d Memory use: %d byte<br />\n",
+                    Class_Trace_List_Poniter[i1].className,
+                    Class_Trace_List_Poniter[i1].funcCount,
+                    Class_Trace_List_Poniter[i1].CpuTimeUse,
+                    Class_Trace_List_Poniter[i1].refCount,
+                    Class_Trace_List_Poniter[i1].memoryUse);
 
             int i2;
             int funclen = Class_Trace_List_Poniter[i1].funcCount;

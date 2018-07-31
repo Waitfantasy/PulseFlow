@@ -146,7 +146,6 @@ ZEND_DLEXPORT void PulseFlow_xhprof_execute_ex(zend_execute_data *execute_data) 
 //                    php_printf("[ %s->%s ] Using [ CPU in %f milliseconds ] [ Memory %d bytes ]<br />\n",
 //                               className->val, funcName->val, elapsed, end_m);
 //                }
-
             }
         }
     }
@@ -176,7 +175,7 @@ PHP_RINIT_FUNCTION (PulseFlow) {
 }
 
 PHP_RSHUTDOWN_FUNCTION (PulseFlow) {
-    PrintClassStruct(TSRMLS_C);
+   // PrintClassStruct(TSRMLS_C);
 
     FREE_disable_trace_functions_hash(TSRMLS_C);
 
