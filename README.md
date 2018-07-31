@@ -24,21 +24,21 @@ PulseFlow由于是一个基于C语言的PHP扩展，为了保持程序体的扩�
 1. true：开启
 2. false：关闭
 
-## 1.3 禁止跟踪函数列表 （PulseFLow.disable_trace_functions） :heavy_check_mark:
+## 1.3 禁止跟踪函数列表 （PulseFlow.disable_trace_functions） :heavy_check_mark:
 
 ### 1.3.1 参数介绍
 这个参数是一个逗号分隔的字符串，代表一系列函数列表，这个函数列表内的函数不进行性能跟踪，默认空字符串。
 
 配置样例：PulseFlow.disable_trace_functions = "getLoader,findFile,loadClassLoader,getInitializer,findFileWithExtension,"
 
-## 1.4 禁止跟踪类列表 （PulseFLow.disable_trace_class） :heavy_check_mark:
+## 1.4 禁止跟踪类列表 （PulseFlow.disable_trace_class） :heavy_check_mark:
 
 ### 1.4.1 参数介绍
 这个参数是一个逗号分隔的字符串，代表一系列类列表，这个类列表内的类不进行性能跟踪，默认空字符串。
 
 配置样例：PulseFlow.disable_trace_functions = "class1,class2,class3"
 
-## 1.5 跟踪模式 （PulseFLow.trace_mode）
+## 1.5 跟踪模式 （PulseFlow.trace_mode）
 
 ### 1.5.1 参数介绍
 这个参数主要用来设置插件的性能跟踪工作模式，目前分类三类：simple、class、function 默认simple
@@ -48,7 +48,7 @@ PulseFlow由于是一个基于C语言的PHP扩展，为了保持程序体的扩�
 
 配置样例： PulseFLow.trace_mode = "simple"
 
-## 1.6 跟踪采样率 （PulseFLow.trace_rate）
+## 1.6 跟踪采样率 （PulseFlow.trace_rate）
 
 ### 1.6.1 参数介绍
 这个参数主要用来设置采样频率，默认值为0 ，代表每次都采集。 如果参数不为0 ,假设为n，则代表每n次进行一次采集。
