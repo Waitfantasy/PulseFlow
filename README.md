@@ -86,3 +86,14 @@ PulseFlow由于是一个基于C语言的PHP扩展，为了保持程序体的扩�
 
 ## 4.2 pulseflow_disable 函数
 禁用 Pulse_FLow 监听功能，这个函数是在给扩展关闭性能监控开关，这个函数之后的代码失去监控状态。
+
+# 5.相关测试
+## 5.1 内存泄露测试 （使用Valgrind）
+```shell
+==20296== LEAK SUMMARY:
+==20296==    definitely lost: 0 bytes in 0 blocks
+==20296==    indirectly lost: 0 bytes in 0 blocks
+==20296==      possibly lost: 0 bytes in 0 blocks
+==20296==    still reachable: 75,936 bytes in 29 blocks
+==20296==         suppressed: 0 bytes in 0 blocks
+```
