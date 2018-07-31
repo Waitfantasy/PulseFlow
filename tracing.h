@@ -89,8 +89,11 @@ static zend_always_inline void INIT_disable_trace_functions_hash(TSRMLS_D) {
 
             if (!zend_hash_exists(PULSEFLOW_G(disable_trace_functions_hash), hash_str)) {
 
-                zend_hash_add(PULSEFLOW_G(disable_trace_functions_hash), hash_str, &zv ZEND_FILE_LINE_CC); //修改点1： ZEND_FILE_LINE_CC
+                zend_hash_add(PULSEFLOW_G(disable_trace_functions_hash), hash_str,
+                              &zv ZEND_FILE_LINE_CC); //修改点1： ZEND_FILE_LINE_CC
             }
+
+            zend_string_release(hash_str);
 
             blockFunctionList = strtok(NULL, ",");
         }
@@ -100,7 +103,7 @@ static zend_always_inline void INIT_disable_trace_functions_hash(TSRMLS_D) {
 }
 
 static zend_always_inline void FREE_disable_trace_functions_hash(TSRMLS_D) {
-
+    zend_hash_destroy(PULSEFLOW_G(disable_trace_functions_hash));
     FREE_HASHTABLE(PULSEFLOW_G(disable_trace_functions_hash));
 
 }
@@ -124,7 +127,8 @@ static zend_always_inline void INIT_disable_trace_class_hash(TSRMLS_D) {
 
             if (!zend_hash_exists(PULSEFLOW_G(disable_trace_class_hash), hash_str)) {
 
-                zend_hash_add(PULSEFLOW_G(disable_trace_class_hash), hash_str, &zv ZEND_FILE_LINE_CC); //修改点2：ZEND_FILE_LINE_CC
+                zend_hash_add(PULSEFLOW_G(disable_trace_class_hash), hash_str,
+                              &zv ZEND_FILE_LINE_CC); //修改点2：ZEND_FILE_LINE_CC
             }
 
             blockFunctionList = strtok(NULL, ",");
@@ -137,7 +141,7 @@ static zend_always_inline void INIT_disable_trace_class_hash(TSRMLS_D) {
 
 
 static zend_always_inline void FREE_disable_trace_class_hash(TSRMLS_D) {
-
+    zend_hash_destroy(PULSEFLOW_G(disable_trace_class_hash));
     FREE_HASHTABLE(PULSEFLOW_G(disable_trace_class_hash));
 
 }
