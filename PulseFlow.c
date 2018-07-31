@@ -175,7 +175,7 @@ PHP_RINIT_FUNCTION (PulseFlow) {
 }
 
 PHP_RSHUTDOWN_FUNCTION (PulseFlow) {
-    // PrintClassStruct(TSRMLS_C);
+    //PrintClassStruct(TSRMLS_C);
 
     FREE_disable_trace_functions_hash(TSRMLS_C);
 
@@ -197,29 +197,39 @@ static zend_always_inline int PulseFlow_info_print(const char *str) /* {{{ */
 
 
 PHP_MINFO_FUNCTION (PulseFlow) {
+
     php_info_print_table_start();
     if (PULSEFLOW_G(enabled)) {
+
         php_info_print_table_header(2, "PulseFlow support", "enabled");
+
     } else {
+
         php_info_print_table_header(2, "PulseFlow support", "disabled");
+
     }
     php_info_print_table_end();
 
     php_info_print_box_start(0);
-
     if (!sapi_module.phpinfo_as_text) {
+
         PulseFlow_info_print("<a href=\"https://github.com/gitsrc/PulseFlow\"><img border=0 src=\"");
+
         PulseFlow_info_print(PulseFLow_LOGO_URI "\" alt=\"PulseFlow logo\" /></a>\n");
+
     }
 
     PulseFlow_info_print("PulseFlow is a PHP Profiler, Monitoring and Trace PHP .");
+
     PulseFlow_info_print(!sapi_module.phpinfo_as_text ? "<br /><br />" : "\n\n");
+
     PulseFlow_info_print(
             "The 'PulseFlow' extension optimized fork of the XHProf extension from tideways_xhprof and Facebook as open-source. <br /><br />&nbsp;&nbsp;(c) Tideways GmbH 2014-2017 <br /> &nbsp;&nbsp;(c) Facebook 2009");
 
     if (!sapi_module.phpinfo_as_text) {
         PulseFlow_info_print(
                 "<br /><br /><strong>Source Code : https://github.com/gitsrc/PulseFlow  </strong>");
+
     }
 
     php_info_print_box_end();
@@ -240,9 +250,13 @@ PHP_FUNCTION (pulseflow_disable) {
 
 
 const zend_function_entry PulseFlow_functions[] = {
+
         PHP_FE(pulseflow_enable, NULL)
+
         PHP_FE(pulseflow_disable, NULL)
+
         PHP_FE_END /* Must be the last line in PulseFlow_functions[] */
+
 };
 
 zend_module_entry PulseFlow_module_entry = {
