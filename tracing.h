@@ -1,7 +1,6 @@
 ZEND_DECLARE_MODULE_GLOBALS(PulseFlow)
 
 static zend_always_inline zend_string *tracing_get_class_name(zend_execute_data *data TSRMLS_DC) {
-    //zend_function *curr_func;
 
     if (!data) {
 
@@ -9,10 +8,8 @@ static zend_always_inline zend_string *tracing_get_class_name(zend_execute_data 
 
     }
 
-    //  curr_func = data->func;
 
     if (data->func->common.scope != NULL) {
-        //   zend_string_addref(curr_func->common.scope->name)
 
         return data->func->common.scope->name;
 
@@ -23,7 +20,6 @@ static zend_always_inline zend_string *tracing_get_class_name(zend_execute_data 
 
 
 static zend_always_inline zend_string *tracing_get_function_name(zend_execute_data *data TSRMLS_DC) {
-    // zend_function *curr_func;
 
     if (!data) {
 
@@ -31,15 +27,12 @@ static zend_always_inline zend_string *tracing_get_function_name(zend_execute_da
 
     }
 
-    // curr_func = data->func;
-
     if (!data->func->common.function_name) {
 
         return NULL;
 
     }
 
-    //zend_string_addref(curr_func->common.function_name);
     return data->func->common.function_name;
 
 }
@@ -141,6 +134,7 @@ static zend_always_inline void INIT_disable_trace_class_hash(TSRMLS_D) {
 
                 zend_hash_add(PULSEFLOW_G(disable_trace_class_hash), hash_str,
                               &zv ZEND_FILE_LINE_CC ); //修改点2：ZEND_FILE_LINE_CC
+
             }
 
             zend_string_release(hash_str);
