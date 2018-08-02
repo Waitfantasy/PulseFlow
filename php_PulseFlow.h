@@ -84,6 +84,14 @@ ZEND_BEGIN_MODULE_GLOBALS(PulseFlow)
     zend_bool enabled;
     zend_bool debug;
 
+    char *encode_type;
+
+    char *send_type;
+    char *posix_name;
+
+    char *svipc_name;
+    long   svipc_gj_id;
+
     char *disable_trace_functions;
     HashTable *disable_trace_functions_hash;
 
