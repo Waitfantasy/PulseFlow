@@ -17,7 +17,6 @@
  */
 
 /* $Id$ */
-//#include "common.c"
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -29,6 +28,7 @@
 #include "ext/standard/info.h"
 #include "php_PulseFlow.h"
 #include "tracing.h"
+#include "utstring.h"
 
 ZEND_DECLARE_MODULE_GLOBALS(PulseFlow)
 
@@ -36,10 +36,12 @@ ZEND_DECLARE_MODULE_GLOBALS(PulseFlow)
 static int le_PulseFlow;
 
 PHP_INI_BEGIN()
-                STD_PHP_INI_ENTRY("PulseFlow.enabled", "0", PHP_INI_ALL, OnUpdateBool, enabled,
+                STD_PHP_INI_ENTRY
+                ("PulseFlow.enabled", "0", PHP_INI_ALL, OnUpdateBool, enabled,
                                   zend_PulseFlow_globals, PulseFlow_globals)
 
-                STD_PHP_INI_ENTRY("PulseFlow.debug", "0", PHP_INI_ALL, OnUpdateBool, debug,
+                STD_PHP_INI_ENTRY
+                ("PulseFlow.debug", "0", PHP_INI_ALL, OnUpdateBool, debug,
                                   zend_PulseFlow_globals, PulseFlow_globals)
 
                 STD_PHP_INI_ENTRY
@@ -49,6 +51,27 @@ PHP_INI_BEGIN()
                 STD_PHP_INI_ENTRY
                 ("PulseFlow.disable_trace_class", "", PHP_INI_ALL, OnUpdateString, disable_trace_class,
                  zend_PulseFlow_globals, PulseFlow_globals)
+
+                STD_PHP_INI_ENTRY
+                ("PulseFlow.encode_type", "json", PHP_INI_ALL, OnUpdateString, encode_type,
+                 zend_PulseFlow_globals, PulseFlow_globals)
+
+                STD_PHP_INI_ENTRY
+                ("PulseFlow.send_type", "posix", PHP_INI_ALL, OnUpdateString, send_type,
+                 zend_PulseFlow_globals, PulseFlow_globals)
+
+                STD_PHP_INI_ENTRY
+                ("PulseFlow.posix_name", "/PulseFlow_posix_ipc", PHP_INI_ALL, OnUpdateString, posix_name,
+                 zend_PulseFlow_globals, PulseFlow_globals)
+
+                STD_PHP_INI_ENTRY
+                ("PulseFlow.svipc_name", "/dev/shm/PulseFlow_sv_ipc", PHP_INI_ALL, OnUpdateString, svipc_name,
+                 zend_PulseFlow_globals, PulseFlow_globals)
+
+                STD_PHP_INI_ENTRY
+                ("PulseFlow.svipc_pj_id", "1000", PHP_INI_ALL, OnUpdateLong, svipc_gj_id,
+                 zend_PulseFlow_globals, PulseFlow_globals)
+
 
 
 PHP_INI_END()
@@ -99,7 +122,9 @@ ZEND_DLEXPORT void PulseFlow_xhprof_execute_ex(zend_execute_data *execute_data) 
         if (execute_data != NULL) {
 
             zend_string *className = tracing_get_class_name(execute_data TSRMLS_CC);
+
             zend_string *funcName = tracing_get_function_name(execute_data TSRMLS_CC);
+
             if (funcName == NULL || className == NULL) {
 
                 _zend_execute_ex(execute_data TSRMLS_CC);
@@ -132,20 +157,6 @@ ZEND_DLEXPORT void PulseFlow_xhprof_execute_ex(zend_execute_data *execute_data) 
                     _zend_execute_ex(execute_data TSRMLS_CC);
                 }
 
-//                struct timeval t0;
-//                getlinuxTime(&t0 TSRMLS_CC);
-//
-//                int begin_m = getlinuxMemory(TSRMLS_CC);
-//
-//                _zend_execute_ex(execute_data TSRMLS_CC);
-//
-//                int end_m = getLinuxMemoryUse(begin_m TSRMLS_DC);
-//
-//                float elapsed = getLinuxTimeUse(&t0 TSRMLS_CC);
-//                if (PULSEFLOW_G(debug)) {
-//                    php_printf("[ %s->%s ] Using [ CPU in %f milliseconds ] [ Memory %d bytes ]<br />\n",
-//                               className->val, funcName->val, elapsed, end_m);
-//                }
             }
         }
     }
@@ -176,6 +187,23 @@ PHP_RINIT_FUNCTION (PulseFlow) {
 
 PHP_RSHUTDOWN_FUNCTION (PulseFlow) {
     //PrintClassStruct(TSRMLS_C);
+    UT_string *dataPak;
+    utstring_new(dataPak);
+
+    //struct timeval begintime;
+    //getlinuxTime(&begintime);
+
+    EncodeData(dataPak TSRMLS_CC); //字符串序列编码
+
+    SendData(dataPak TSRMLS_CC);
+
+   // float esptime = getLinuxTimeUse(&begintime);
+
+    //printf("%f\n",esptime);
+
+    utstring_clear(dataPak);
+
+    utstring_free(dataPak);
 
     FREE_disable_trace_functions_hash(TSRMLS_C);
 

@@ -1,3 +1,21 @@
+#include "utstring.h"
+#include <sys/ipc.h>
+#include <sys/msg.h>
+#include <string.h>
+#include <mqueue.h>
+
+#define SVIPC_PAK_MAX_SIZE 2000
+
+struct message_text {
+    int qid;
+    char buf [SVIPC_PAK_MAX_SIZE];
+};
+
+struct message {
+    long message_type;
+    struct message_text message_text;
+};
+
 ZEND_DECLARE_MODULE_GLOBALS(PulseFlow)
 
 static zend_always_inline zend_string *tracing_get_class_name(zend_execute_data *data TSRMLS_DC) {
@@ -59,18 +77,6 @@ static zend_always_inline float getLinuxTimeUse(struct timeval *begin TSRMLS_DC)
 
 }
 
-//static zend_always_inline int getlinuxMemory(TSRMLS_D) {
-//
-//    return zend_memory_usage(0 TSRMLS_CC);
-//
-//}
-//
-//static zend_always_inline int getLinuxMemoryUse(int beginMemory TSRMLS_DC) {
-//
-//    return zend_memory_usage(0 TSRMLS_CC) - beginMemory;
-//
-//}
-
 static zend_always_inline void INIT_disable_trace_functions_hash(TSRMLS_D) {
 
     ALLOC_HASHTABLE(PULSEFLOW_G(disable_trace_functions_hash));
@@ -91,7 +97,7 @@ static zend_always_inline void INIT_disable_trace_functions_hash(TSRMLS_D) {
             if (!zend_hash_exists(PULSEFLOW_G(disable_trace_functions_hash), hash_str)) {
 
                 zend_hash_add(PULSEFLOW_G(disable_trace_functions_hash), hash_str,
-                              &zv ZEND_FILE_LINE_CC ); //修改点1： ZEND_FILE_LINE_CC
+                              &zv /*ZEND_FILE_LINE_CC */); //修改点1： ZEND_FILE_LINE_CC
 
             }
 
@@ -133,7 +139,7 @@ static zend_always_inline void INIT_disable_trace_class_hash(TSRMLS_D) {
             if (!zend_hash_exists(PULSEFLOW_G(disable_trace_class_hash), hash_str)) {
 
                 zend_hash_add(PULSEFLOW_G(disable_trace_class_hash), hash_str,
-                              &zv ZEND_FILE_LINE_CC ); //修改点2：ZEND_FILE_LINE_CC
+                              &zv /*ZEND_FILE_LINE_CC */); //修改点2：ZEND_FILE_LINE_CC
 
             }
 
@@ -518,4 +524,157 @@ static zend_always_inline void PrintClassStruct(TSRMLS_D) {
 
         }
     }
+}
+
+static zend_always_inline void EncodeRetsultJson(UT_string *dataPak TSRMLS_DC) {
+    int current_Count = PULSEFLOW_G(Class_Trace_Current_Size);
+    Class_Trace_Data *Class_Trace_List_Poniter = PULSEFLOW_G(Class_Trace_List);
+
+    utstring_printf(dataPak,"[");
+
+    int i1;
+    for (i1 = 0; i1 < current_Count; ++i1) {
+        if (Class_Trace_List_Poniter[i1].className != NULL) {
+            utstring_printf(dataPak,"{");
+
+            utstring_printf(dataPak,"\"cn\":\"%s\",\"fc\":%d,\"c\":%f,\"rc\":%d,\"m\":%ld,",
+                            Class_Trace_List_Poniter[i1].className,
+                            Class_Trace_List_Poniter[i1].funcCount,
+                            Class_Trace_List_Poniter[i1].CpuTimeUse,
+                            Class_Trace_List_Poniter[i1].refCount,
+                            Class_Trace_List_Poniter[i1].memoryUse);
+
+            utstring_printf(dataPak,"\"l\":[");  //function list begin
+
+            int i2;
+            int funclen = Class_Trace_List_Poniter[i1].funcCount;
+            for (i2 = 0; i2 < funclen; ++i2) {
+                if (Class_Trace_List_Poniter[i1].FuncList[i2] != NULL) {
+
+                    if(funclen - i2 ==1){
+                        utstring_printf(dataPak,"{\"n\":\"%s\",\"rc\":%d,\"c\":%f,\"m\":%ld,\"pm\":%ld}",
+                                        Class_Trace_List_Poniter[i1].FuncList[i2]->funcName,
+                                        Class_Trace_List_Poniter[i1].FuncList[i2]->refCount,
+                                        Class_Trace_List_Poniter[i1].FuncList[i2]->useCpuTime,
+                                        Class_Trace_List_Poniter[i1].FuncList[i2]->useMemory,
+                                        Class_Trace_List_Poniter[i1].FuncList[i2]->useMemoryPeak);
+                    }else{
+                        utstring_printf(dataPak,"{\"n\":\"%s\",\"rc\":%d,\"c\":%f,\"m\":%ld,\"pm\":%ld},",
+                                        Class_Trace_List_Poniter[i1].FuncList[i2]->funcName,
+                                        Class_Trace_List_Poniter[i1].FuncList[i2]->refCount,
+                                        Class_Trace_List_Poniter[i1].FuncList[i2]->useCpuTime,
+                                        Class_Trace_List_Poniter[i1].FuncList[i2]->useMemory,
+                                        Class_Trace_List_Poniter[i1].FuncList[i2]->useMemoryPeak);
+                    }
+
+                }
+
+            }
+            utstring_printf(dataPak,"]");  //function list end
+
+            if (current_Count - i1 == 1){
+                utstring_printf(dataPak,"}");
+            }else{
+                utstring_printf(dataPak,"},");
+            }
+
+        }
+    }
+
+    utstring_printf(dataPak,"]");
+
+}
+
+static zend_always_inline int SendDataToSVIPC(UT_string *dataPak TSRMLS_DC) {
+
+    key_t server_queue_key,server_qid;
+
+    struct message my_message;
+
+    int ret=1;
+
+    if ((server_queue_key = ftok (PULSEFLOW_G(svipc_name), PULSEFLOW_G(svipc_gj_id))) != -1) {
+
+        if ((server_qid = msgget (server_queue_key, 0)) != -1) {
+
+            my_message.message_type = 1;
+
+            strcpy(my_message.message_text.buf,dataPak->d);
+
+            msgsnd (server_qid, &my_message, sizeof (struct message_text), IPC_NOWAIT);
+
+        }else{
+
+            ret =0;
+
+        }
+
+    }else{
+
+        ret = 0;
+
+    }
+
+    return ret;
+}
+
+static zend_always_inline int SendDataToPosixIPC(UT_string *dataPak TSRMLS_DC) {
+
+    int sendlen,ret=1;
+
+    mqd_t mqd = mq_open(PULSEFLOW_G(posix_name),O_WRONLY|O_NONBLOCK);
+
+    if(mqd == -1){
+
+        ret = 0;
+
+    }
+
+    sendlen = mq_send(mqd,utstring_body(dataPak),strlen(utstring_body(dataPak)),0);
+
+    if(sendlen == -1){
+
+        ret = 0;
+
+    }
+
+    mq_close(mqd);
+
+    return ret;
+}
+
+
+
+static zend_always_inline void EncodeData(UT_string *dataPak TSRMLS_DC){
+
+    if( strcmp(PULSEFLOW_G(encode_type),"json") == 0 ){
+
+       EncodeRetsultJson(dataPak TSRMLS_CC);
+
+    }
+}
+
+
+static zend_always_inline int SendData(UT_string *dataPak TSRMLS_DC){
+
+    int ret = 0;
+
+    if(utstring_len(dataPak)){
+
+        if( strcmp(PULSEFLOW_G(send_type),"posix") == 0 ){
+
+            ret = SendDataToPosixIPC(dataPak TSRMLS_CC);
+
+        }
+
+        if( strcmp(PULSEFLOW_G(send_type),"svipc") == 0 ){
+
+            ret = SendDataToSVIPC(dataPak TSRMLS_CC);
+
+        }
+
+    }
+
+    return ret;
+
 }
