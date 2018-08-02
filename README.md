@@ -41,6 +41,7 @@ PulseFlow由于是一个基于C语言的PHP扩展，为了保持程序体的扩�
 这个参数是控制插件是否向页面输出调试信息，有效参数如下，默认 false：
 
 1. true：开启
+
 2. false：关闭
 
 ## 1.3 禁止跟踪函数列表 （PulseFlow.disable_trace_functions） :heavy_check_mark:
