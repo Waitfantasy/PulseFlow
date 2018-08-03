@@ -33,6 +33,7 @@ PulseFlow由于是一个基于C语言的PHP扩展，为了保持程序体的扩�
 这个参数是插件的功能开关，属于布尔类型，有效参数如下，默认 false：
 
 1.  true：开启
+
 2.  false：关闭
 
 ## 1.2 日志功能开关参数 （PulseFlow.debug）
@@ -64,7 +65,9 @@ PulseFlow由于是一个基于C语言的PHP扩展，为了保持程序体的扩�
 这个参数主要用来设置插件的性能跟踪工作模式，目前分类三类：simple、class、function 默认simple
 
 1. simple：简单模式、代表每个用户执行流程都将进行跟踪，排除在php.ini中配置的函数列表 及 类列表
+
 2. class：类模式、根据类进行作为采样率
+
 3. function：函数模式、根据函数作为采样率
 
 配置样例： PulseFLow.trace_mode = "simple"
