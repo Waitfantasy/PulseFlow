@@ -1,20 +1,43 @@
 <?php
-die;
-print libiaofunc2();
-if(!extension_loaded('PulseFlow')) {
-	dl('PulseFlow.' . PHP_SHLIB_SUFFIX);
+class test{
+public function exec(){
+return 0;
 }
-$module = 'PulseFlow';
-$functions = get_extension_funcs($module);
-echo "Functions available in the test extension:$br\n";
-foreach($functions as $func) {
-    echo $func."$br\n";
+
+public function exec1(){
+return 0;
 }
-//usleep(10000);
-echo "$br\n";
-$function = 'confirm_' . $module . '_compiled';
-if (extension_loaded($module)) {
-	$str = $function($module);
-} else {
-	$str = "Module $module is not compiled into PHP";
-}?>
+
+public function exec4(){
+return 0;
+}
+
+}
+
+class test2{
+public function exec3(){
+return 0;
+}
+}
+
+$a = new test();
+$a->exec();
+
+$a->exec1();
+
+
+$a->exec4();
+
+
+$a->exec4();
+$a->exec();
+
+$a->exec1();
+$a->exec();
+
+$a->exec1();
+
+$a = new test2();
+
+$a->exec3();
+?>
