@@ -546,7 +546,7 @@ static zend_always_inline sds EncodeRetsultJson(sds dataPak TSRMLS_DC) {
     for (i1 = 0; i1 < current_Count; ++i1) {
         if (Class_Trace_List_Poniter[i1].className != NULL) {
             dataPak = sdscat(dataPak, "{");
-            dataPak = sdscatprintf(dataPak, "\"cn\":\"%s\",\"fc\":%d,\"c\":%f,\"rc\":%d,\"m\":%d,",
+            dataPak = sdscatprintf(dataPak, "\"cn\":\"%s\",\"fc\":%d,\"c\":%f,\"rc\":%d,\"m\":%ld,",
                             Class_Trace_List_Poniter[i1].className,
                          Class_Trace_List_Poniter[i1].funcCount,
                             Class_Trace_List_Poniter[i1].CpuTimeUse,

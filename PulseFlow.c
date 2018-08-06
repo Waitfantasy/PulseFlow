@@ -193,16 +193,15 @@ PHP_RSHUTDOWN_FUNCTION (PulseFlow) {
 
     dataPak = sdsempty();
 //
-  //  dataPak = EncodeData(dataPak TSRMLS_CC); //字符串序列编码
+    dataPak = EncodeData(dataPak TSRMLS_CC); //字符串序列编码
 
 //
 //    printf("%s\n",dataPak);
-    //SendData(dataPak TSRMLS_CC);
+    SendData(dataPak TSRMLS_CC);
 
 //
 
-    sdsfree(dataPak); /* Not needed. */
- //   sdsfree(string);
+    sdsfree(dataPak);
     // utstring_clear(dataPak);
 
     //utstring_free(dataPak);
