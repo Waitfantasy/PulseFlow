@@ -1,4 +1,6 @@
 #include "utstring.h"
+#include "string_hash.h"
+
 #include <sys/ipc.h>
 #include <sys/msg.h>
 #include <string.h>
@@ -8,7 +10,7 @@
 
 struct message_text {
     int qid;
-    char buf [SVIPC_PAK_MAX_SIZE];
+    char buf[SVIPC_PAK_MAX_SIZE];
 };
 
 struct message {
@@ -189,11 +191,14 @@ static zend_always_inline Class_Trace_Data *Trace_Class_Pointer(zend_string *cla
 
     int classNameLen = className->len;
 
+    unsigned long classHash = BKDRHash(className->val, classNameLen);
+
     int i;
     for (i = 0; i < current_Count; ++i) {
         //从第一个CLASS全局数组开始找Class名相同的指针结构体元素
 
-        if (strcmp(Class_Trace_List_Poniter[i].className, className->val) == 0) {
+        if ((classHash == Class_Trace_List_Poniter[i].classHash) &&
+            (strcmp(Class_Trace_List_Poniter[i].className, className->val) == 0)) {
             retPoint = Class_Trace_List_Poniter + i;
             break;
         }
@@ -250,6 +255,8 @@ static zend_always_inline Class_Trace_Data *Trace_Class_Pointer(zend_string *cla
             Class_Trace_List_Poniter[current_Count].className = malloc(sizeof(char) * (classNameLen + 1));
             strncpy(Class_Trace_List_Poniter[current_Count].className, className->val, classNameLen); //使用strcpy安全函数
             Class_Trace_List_Poniter[current_Count].className[classNameLen] = '\0';
+
+            Class_Trace_List_Poniter[current_Count].classHash = classHash;
 
             retPoint = Class_Trace_List_Poniter + current_Count;
 
@@ -311,11 +318,14 @@ Trace_Class_Function_Pointer(Class_Trace_Data *classPointer, zend_string *funcNa
 
     int funcNameLen = funcName->len;
 
+    unsigned long funcHash = BKDRHash(funcName->val, funcNameLen);
+
     int i;
     for (i = 0; i < current_Count; ++i) {
         //从第一个FUNC全局数组开始找FUNC名相同的指针结构体元素
 
-        if ((strcmp(Func_Trace_List_Poniter[i].funcName, funcName->val) == 0) &&
+        if ((funcHash == Func_Trace_List_Poniter[i].funcHash) &&
+            (strcmp(Func_Trace_List_Poniter[i].funcName, funcName->val) == 0) &&
             (Func_Trace_List_Poniter[i].ClassAddr == classPointer)) {
             //在全局函数指针列表中找到了这个函数，则进行指针赋值
             retPoint = Func_Trace_List_Poniter + i;
@@ -367,6 +377,7 @@ Trace_Class_Function_Pointer(Class_Trace_Data *classPointer, zend_string *funcNa
             Func_Trace_List_Poniter[current_Count].funcName = malloc(sizeof(char) * (funcNameLen + 1));
             strncpy(Func_Trace_List_Poniter[current_Count].funcName, funcName->val, funcNameLen); //使用strcpy安全函数
             Func_Trace_List_Poniter[current_Count].funcName[funcNameLen] = '\0';
+            Func_Trace_List_Poniter[current_Count].funcHash = funcHash;
 
             //至此 已经完成函数结构体内存全部分配 ，但是没有完全构造链接化
 
@@ -467,7 +478,7 @@ Trace_Performance_Begin(Class_Trace_Data *classPointer, Func_Trace_Data *funcPoi
 
     funcPointer->useMemoryStart = zend_memory_usage(0 TSRMLS_CC);
 
-    funcPointer->useMemoryPeakStart = zend_memory_peak_usage(0 TSRMLS_CC);
+  //  funcPointer->useMemoryPeakStart = zend_memory_peak_usage(0 TSRMLS_CC);
 
     funcPointer->refCount++;
 
@@ -482,7 +493,7 @@ Trace_Performance_End(Class_Trace_Data *classPointer, Func_Trace_Data *funcPoint
 
     funcPointer->useMemory += (zend_memory_usage(0 TSRMLS_CC) - funcPointer->useMemoryStart);
 
-    funcPointer->useMemoryPeak += (zend_memory_peak_usage(0 TSRMLS_CC) - funcPointer->useMemoryPeakStart);
+  //  funcPointer->useMemoryPeak += (zend_memory_peak_usage(0 TSRMLS_CC) - funcPointer->useMemoryPeakStart);
 
     classPointer->CpuTimeUse += funcPointer->useCpuTime;
 
@@ -530,86 +541,86 @@ static zend_always_inline void EncodeRetsultJson(UT_string *dataPak TSRMLS_DC) {
     int current_Count = PULSEFLOW_G(Class_Trace_Current_Size);
     Class_Trace_Data *Class_Trace_List_Poniter = PULSEFLOW_G(Class_Trace_List);
 
-    utstring_printf(dataPak,"[");
+    utstring_printf(dataPak, "[");
 
     int i1;
     for (i1 = 0; i1 < current_Count; ++i1) {
         if (Class_Trace_List_Poniter[i1].className != NULL) {
-            utstring_printf(dataPak,"{");
+            utstring_printf(dataPak, "{");
 
-            utstring_printf(dataPak,"\"cn\":\"%s\",\"fc\":%d,\"c\":%f,\"rc\":%d,\"m\":%ld,",
+            utstring_printf(dataPak, "\"cn\":\"%s\",\"fc\":%d,\"c\":%f,\"rc\":%d,\"m\":%ld,",
                             Class_Trace_List_Poniter[i1].className,
                             Class_Trace_List_Poniter[i1].funcCount,
                             Class_Trace_List_Poniter[i1].CpuTimeUse,
                             Class_Trace_List_Poniter[i1].refCount,
                             Class_Trace_List_Poniter[i1].memoryUse);
 
-            utstring_printf(dataPak,"\"l\":[");  //function list begin
+            utstring_printf(dataPak, "\"l\":[");  //function list begin
 
             int i2;
             int funclen = Class_Trace_List_Poniter[i1].funcCount;
             for (i2 = 0; i2 < funclen; ++i2) {
                 if (Class_Trace_List_Poniter[i1].FuncList[i2] != NULL) {
 
-                    if(funclen - i2 ==1){
-                        utstring_printf(dataPak,"{\"n\":\"%s\",\"rc\":%d,\"c\":%f,\"m\":%ld,\"pm\":%ld}",
+                    if (funclen - i2 == 1) {
+                        utstring_printf(dataPak, "{\"n\":\"%s\",\"rc\":%d,\"c\":%f,\"m\":%ld}", //,"pm":%ld
                                         Class_Trace_List_Poniter[i1].FuncList[i2]->funcName,
                                         Class_Trace_List_Poniter[i1].FuncList[i2]->refCount,
                                         Class_Trace_List_Poniter[i1].FuncList[i2]->useCpuTime,
-                                        Class_Trace_List_Poniter[i1].FuncList[i2]->useMemory,
-                                        Class_Trace_List_Poniter[i1].FuncList[i2]->useMemoryPeak);
-                    }else{
-                        utstring_printf(dataPak,"{\"n\":\"%s\",\"rc\":%d,\"c\":%f,\"m\":%ld,\"pm\":%ld},",
+                                        Class_Trace_List_Poniter[i1].FuncList[i2]->useMemory /*,
+                                        Class_Trace_List_Poniter[i1].FuncList[i2]->useMemoryPeak */);
+                    } else {
+                        utstring_printf(dataPak, "{\"n\":\"%s\",\"rc\":%d,\"c\":%f,\"m\":%ld},", //,"pm":%ld
                                         Class_Trace_List_Poniter[i1].FuncList[i2]->funcName,
                                         Class_Trace_List_Poniter[i1].FuncList[i2]->refCount,
                                         Class_Trace_List_Poniter[i1].FuncList[i2]->useCpuTime,
-                                        Class_Trace_List_Poniter[i1].FuncList[i2]->useMemory,
-                                        Class_Trace_List_Poniter[i1].FuncList[i2]->useMemoryPeak);
+                                        Class_Trace_List_Poniter[i1].FuncList[i2]->useMemory /*,
+                                        Class_Trace_List_Poniter[i1].FuncList[i2]->useMemoryPeak */);
                     }
 
                 }
 
             }
-            utstring_printf(dataPak,"]");  //function list end
+            utstring_printf(dataPak, "]");  //function list end
 
-            if (current_Count - i1 == 1){
-                utstring_printf(dataPak,"}");
-            }else{
-                utstring_printf(dataPak,"},");
+            if (current_Count - i1 == 1) {
+                utstring_printf(dataPak, "}");
+            } else {
+                utstring_printf(dataPak, "},");
             }
 
         }
     }
 
-    utstring_printf(dataPak,"]");
+    utstring_printf(dataPak, "]");
 
 }
 
 static zend_always_inline int SendDataToSVIPC(UT_string *dataPak TSRMLS_DC) {
 
-    key_t server_queue_key,server_qid;
+    key_t server_queue_key, server_qid;
 
     struct message my_message;
 
-    int ret=1;
+    int ret = 1;
 
-    if ((server_queue_key = ftok (PULSEFLOW_G(svipc_name), PULSEFLOW_G(svipc_gj_id))) != -1) {
+    if ((server_queue_key = ftok(PULSEFLOW_G(svipc_name), PULSEFLOW_G(svipc_gj_id))) != -1) {
 
-        if ((server_qid = msgget (server_queue_key, 0)) != -1) {
+        if ((server_qid = msgget(server_queue_key, 0)) != -1) {
 
             my_message.message_type = 1;
 
-            strcpy(my_message.message_text.buf,dataPak->d);
+            strcpy(my_message.message_text.buf, dataPak->d);
 
-            msgsnd (server_qid, &my_message, sizeof (struct message_text), IPC_NOWAIT);
+            msgsnd(server_qid, &my_message, sizeof(struct message_text), IPC_NOWAIT);
 
-        }else{
+        } else {
 
-            ret =0;
+            ret = 0;
 
         }
 
-    }else{
+    } else {
 
         ret = 0;
 
@@ -620,19 +631,19 @@ static zend_always_inline int SendDataToSVIPC(UT_string *dataPak TSRMLS_DC) {
 
 static zend_always_inline int SendDataToPosixIPC(UT_string *dataPak TSRMLS_DC) {
 
-    int sendlen,ret=1;
+    int sendlen, ret = 1;
 
-    mqd_t mqd = mq_open(PULSEFLOW_G(posix_name),O_WRONLY|O_NONBLOCK);
+    mqd_t mqd = mq_open(PULSEFLOW_G(posix_name), O_WRONLY | O_NONBLOCK);
 
-    if(mqd == -1){
+    if (mqd == -1) {
 
         ret = 0;
 
     }
 
-    sendlen = mq_send(mqd,utstring_body(dataPak),strlen(utstring_body(dataPak)),0);
+    sendlen = mq_send(mqd, utstring_body(dataPak), strlen(utstring_body(dataPak)), 0);
 
-    if(sendlen == -1){
+    if (sendlen == -1) {
 
         ret = 0;
 
@@ -644,30 +655,29 @@ static zend_always_inline int SendDataToPosixIPC(UT_string *dataPak TSRMLS_DC) {
 }
 
 
+static zend_always_inline void EncodeData(UT_string *dataPak TSRMLS_DC) {
 
-static zend_always_inline void EncodeData(UT_string *dataPak TSRMLS_DC){
+    if (strcmp(PULSEFLOW_G(encode_type), "json") == 0) {
 
-    if( strcmp(PULSEFLOW_G(encode_type),"json") == 0 ){
-
-       EncodeRetsultJson(dataPak TSRMLS_CC);
+        EncodeRetsultJson(dataPak TSRMLS_CC);
 
     }
 }
 
 
-static zend_always_inline int SendData(UT_string *dataPak TSRMLS_DC){
+static zend_always_inline int SendData(UT_string *dataPak TSRMLS_DC) {
 
     int ret = 0;
 
-    if(utstring_len(dataPak)){
+    if (utstring_len(dataPak)) {
 
-        if( strcmp(PULSEFLOW_G(send_type),"posix") == 0 ){
+        if (strcmp(PULSEFLOW_G(send_type), "posix") == 0) {
 
             ret = SendDataToPosixIPC(dataPak TSRMLS_CC);
 
         }
 
-        if( strcmp(PULSEFLOW_G(send_type),"svipc") == 0 ){
+        if (strcmp(PULSEFLOW_G(send_type), "svipc") == 0) {
 
             ret = SendDataToSVIPC(dataPak TSRMLS_CC);
 

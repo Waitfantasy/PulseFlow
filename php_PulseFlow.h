@@ -47,18 +47,27 @@ extern zend_module_entry PulseFlow_module_entry;
 typedef struct Class_Trace_Struct Class_Trace_Data;
 typedef struct Func_Trace_Struct Func_Trace_Data;
 
-#define CLASS_TRACE_RESIZE_STEP 5
+#define CLASS_TRACE_RESIZE_STEP 10
 
-#define FUNC_TRACE_RESIZE_STEP 10
+#define FUNC_TRACE_RESIZE_STEP 20
 
 struct Class_Trace_Struct {
+
     int refCount;
+
     int funcCount; //当前使用的单元数
+
     int funcMemoryCount;  //为FuncList分配的总单元数
+
     Func_Trace_Data **FuncList;
+
     size_t memoryUse;
+
     float CpuTimeUse;
+
     char *className;
+
+    unsigned long classHash;
 };
 
 struct Func_Trace_Struct {
@@ -78,6 +87,8 @@ struct Func_Trace_Struct {
     Class_Trace_Data *ClassAddr;
 
     char *funcName;
+
+    unsigned long funcHash;
 };
 
 ZEND_BEGIN_MODULE_GLOBALS(PulseFlow)
