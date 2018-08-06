@@ -28,7 +28,7 @@
 #include "ext/standard/info.h"
 #include "php_PulseFlow.h"
 #include "tracing.h"
-#include "utstring.h"
+#include "sds.h"
 
 ZEND_DECLARE_MODULE_GLOBALS(PulseFlow)
 
@@ -186,18 +186,26 @@ PHP_RINIT_FUNCTION (PulseFlow) {
 }
 
 PHP_RSHUTDOWN_FUNCTION (PulseFlow) {
-    UT_string *dataPak;
-    utstring_new(dataPak);
+    sds dataPak;
+    //int a;
+  //  UT_string *dataPak;
+   // utstring_new(dataPak);
 
+    dataPak = sdsempty();
+//
+  //  dataPak = EncodeData(dataPak TSRMLS_CC); //字符串序列编码
 
-    EncodeData(dataPak TSRMLS_CC); //字符串序列编码
+//
+//    printf("%s\n",dataPak);
+    //SendData(dataPak TSRMLS_CC);
 
-    SendData(dataPak TSRMLS_CC);
+//
 
+    sdsfree(dataPak); /* Not needed. */
+ //   sdsfree(string);
+    // utstring_clear(dataPak);
 
-    utstring_clear(dataPak);
-
-    utstring_free(dataPak);
+    //utstring_free(dataPak);
 
     FREE_disable_trace_functions_hash(TSRMLS_C);
 

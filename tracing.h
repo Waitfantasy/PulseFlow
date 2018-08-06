@@ -1,6 +1,5 @@
-#include "utstring.h"
 #include "string_hash.h"
-
+#include "sds.c"
 #include <sys/ipc.h>
 #include <sys/msg.h>
 #include <string.h>
@@ -537,25 +536,23 @@ static zend_always_inline void PrintClassStruct(TSRMLS_D) {
     }
 }
 
-static zend_always_inline void EncodeRetsultJson(UT_string *dataPak TSRMLS_DC) {
+static zend_always_inline sds EncodeRetsultJson(sds dataPak TSRMLS_DC) {
     int current_Count = PULSEFLOW_G(Class_Trace_Current_Size);
     Class_Trace_Data *Class_Trace_List_Poniter = PULSEFLOW_G(Class_Trace_List);
 
-    utstring_printf(dataPak, "[");
+    dataPak = sdscat(dataPak, "[");
 
     int i1;
     for (i1 = 0; i1 < current_Count; ++i1) {
         if (Class_Trace_List_Poniter[i1].className != NULL) {
-            utstring_printf(dataPak, "{");
-
-            utstring_printf(dataPak, "\"cn\":\"%s\",\"fc\":%d,\"c\":%f,\"rc\":%d,\"m\":%ld,",
+            dataPak = sdscat(dataPak, "{");
+            dataPak = sdscatprintf(dataPak, "\"cn\":\"%s\",\"fc\":%d,\"c\":%f,\"rc\":%d,\"m\":%d,",
                             Class_Trace_List_Poniter[i1].className,
-                            Class_Trace_List_Poniter[i1].funcCount,
+                         Class_Trace_List_Poniter[i1].funcCount,
                             Class_Trace_List_Poniter[i1].CpuTimeUse,
                             Class_Trace_List_Poniter[i1].refCount,
                             Class_Trace_List_Poniter[i1].memoryUse);
-
-            utstring_printf(dataPak, "\"l\":[");  //function list begin
+            dataPak = sdscat(dataPak, "\"l\":[");  //function list begin
 
             int i2;
             int funclen = Class_Trace_List_Poniter[i1].funcCount;
@@ -563,14 +560,14 @@ static zend_always_inline void EncodeRetsultJson(UT_string *dataPak TSRMLS_DC) {
                 if (Class_Trace_List_Poniter[i1].FuncList[i2] != NULL) {
 
                     if (funclen - i2 == 1) {
-                        utstring_printf(dataPak, "{\"n\":\"%s\",\"rc\":%d,\"c\":%f,\"m\":%ld}", //,"pm":%ld
+                        dataPak = sdscatprintf(dataPak, "{\"n\":\"%s\",\"rc\":%d,\"c\":%f,\"m\":%ld}", //,"pm":%ld
                                         Class_Trace_List_Poniter[i1].FuncList[i2]->funcName,
                                         Class_Trace_List_Poniter[i1].FuncList[i2]->refCount,
                                         Class_Trace_List_Poniter[i1].FuncList[i2]->useCpuTime,
                                         Class_Trace_List_Poniter[i1].FuncList[i2]->useMemory /*,
                                         Class_Trace_List_Poniter[i1].FuncList[i2]->useMemoryPeak */);
                     } else {
-                        utstring_printf(dataPak, "{\"n\":\"%s\",\"rc\":%d,\"c\":%f,\"m\":%ld},", //,"pm":%ld
+                        dataPak =  sdscatprintf(dataPak, "{\"n\":\"%s\",\"rc\":%d,\"c\":%f,\"m\":%ld},", //,"pm":%ld
                                         Class_Trace_List_Poniter[i1].FuncList[i2]->funcName,
                                         Class_Trace_List_Poniter[i1].FuncList[i2]->refCount,
                                         Class_Trace_List_Poniter[i1].FuncList[i2]->useCpuTime,
@@ -581,22 +578,23 @@ static zend_always_inline void EncodeRetsultJson(UT_string *dataPak TSRMLS_DC) {
                 }
 
             }
-            utstring_printf(dataPak, "]");  //function list end
+            dataPak =  sdscat(dataPak, "]");  //function list end
 
             if (current_Count - i1 == 1) {
-                utstring_printf(dataPak, "}");
+                dataPak =  sdscat(dataPak, "}");
             } else {
-                utstring_printf(dataPak, "},");
+                dataPak =  sdscat(dataPak, "},");
             }
 
         }
     }
 
-    utstring_printf(dataPak, "]");
+    dataPak = sdscat(dataPak, "]");
 
+   return dataPak;
 }
 
-static zend_always_inline int SendDataToSVIPC(UT_string *dataPak TSRMLS_DC) {
+static zend_always_inline int SendDataToSVIPC(sds dataPak TSRMLS_DC) {
 
     key_t server_queue_key, server_qid;
 
@@ -610,7 +608,7 @@ static zend_always_inline int SendDataToSVIPC(UT_string *dataPak TSRMLS_DC) {
 
             my_message.message_type = 1;
 
-            strcpy(my_message.message_text.buf, dataPak->d);
+            strcpy(my_message.message_text.buf, dataPak);
 
             msgsnd(server_qid, &my_message, sizeof(struct message_text), IPC_NOWAIT);
 
@@ -629,7 +627,7 @@ static zend_always_inline int SendDataToSVIPC(UT_string *dataPak TSRMLS_DC) {
     return ret;
 }
 
-static zend_always_inline int SendDataToPosixIPC(UT_string *dataPak TSRMLS_DC) {
+static zend_always_inline int SendDataToPosixIPC(sds dataPak TSRMLS_DC) {
 
     int sendlen, ret = 1;
 
@@ -641,7 +639,7 @@ static zend_always_inline int SendDataToPosixIPC(UT_string *dataPak TSRMLS_DC) {
 
     }
 
-    sendlen = mq_send(mqd, utstring_body(dataPak), strlen(utstring_body(dataPak)), 0);
+    sendlen = mq_send(mqd, dataPak, strlen(dataPak), 0);
 
     if (sendlen == -1) {
 
@@ -655,21 +653,21 @@ static zend_always_inline int SendDataToPosixIPC(UT_string *dataPak TSRMLS_DC) {
 }
 
 
-static zend_always_inline void EncodeData(UT_string *dataPak TSRMLS_DC) {
+static zend_always_inline sds EncodeData(sds dataPak TSRMLS_DC) {
 
     if (strcmp(PULSEFLOW_G(encode_type), "json") == 0) {
 
-        EncodeRetsultJson(dataPak TSRMLS_CC);
+        return EncodeRetsultJson(dataPak TSRMLS_CC);
 
     }
 }
 
 
-static zend_always_inline int SendData(UT_string *dataPak TSRMLS_DC) {
+static zend_always_inline int SendData(sds dataPak TSRMLS_DC) {
 
     int ret = 0;
 
-    if (utstring_len(dataPak)) {
+    if (strlen(dataPak)) {
 
         if (strcmp(PULSEFLOW_G(send_type), "posix") == 0) {
 
