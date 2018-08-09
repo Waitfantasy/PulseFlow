@@ -38,11 +38,11 @@ static int le_PulseFlow;
 PHP_INI_BEGIN()
                 STD_PHP_INI_ENTRY
                 ("PulseFlow.enabled", "0", PHP_INI_ALL, OnUpdateBool, enabled,
-                                  zend_PulseFlow_globals, PulseFlow_globals)
+                 zend_PulseFlow_globals, PulseFlow_globals)
 
                 STD_PHP_INI_ENTRY
                 ("PulseFlow.debug", "0", PHP_INI_ALL, OnUpdateBool, debug,
-                                  zend_PulseFlow_globals, PulseFlow_globals)
+                 zend_PulseFlow_globals, PulseFlow_globals)
 
                 STD_PHP_INI_ENTRY
                 ("PulseFlow.disable_trace_functions", "", PHP_INI_ALL, OnUpdateString, disable_trace_functions,
@@ -71,7 +71,6 @@ PHP_INI_BEGIN()
                 STD_PHP_INI_ENTRY
                 ("PulseFlow.svipc_pj_id", "1000", PHP_INI_ALL, OnUpdateLong, svipc_gj_id,
                  zend_PulseFlow_globals, PulseFlow_globals)
-
 
 
 PHP_INI_END()
@@ -139,23 +138,49 @@ ZEND_DLEXPORT void PulseFlow_xhprof_execute_ex(zend_execute_data *execute_data) 
 
             } else {
                 // funcName and ClassName all not NULL
-                Class_Trace_Data *classPointer = Trace_Class_Pointer(className TSRMLS_CC);
+                key_t Class_Shm_Id = Trace_Class_Shm_Id(className TSRMLS_CC);  //获取指定类名的 共享内存 ID
 
                 int isExecCode = 1;
-                if (classPointer != NULL) {
-                    //在Class Ponter基础上进行 函数 扩充
-                    Func_Trace_Data *funcPointer = Trace_Class_Function_Pointer(classPointer, funcName);
-                    if (funcPointer != NULL) {
+
+                if (Class_Shm_Id > 0) {
+
+                    key_t func_shm_Id = Trace_Func_Shm_Id(Class_Shm_Id, className);
+
+                    if (func_shm_Id > 0) {
+                     //   printf("Class Shm Id : %d ; Func Shm Id : %d ; %s %s \n",Class_Shm_Id,func_shm_Id,className->val,funcName->val);
+                        int ret1, ret2;
                         isExecCode = 0;
-                        Trace_Performance_Begin(classPointer, funcPointer);
+                        ret1 = Trace_Performance_Begin(Class_Shm_Id, func_shm_Id);
                         _zend_execute_ex(execute_data TSRMLS_CC);
-                        Trace_Performance_End(classPointer, funcPointer);
+
+                        ret2 = Trace_Performance_End(Class_Shm_Id, func_shm_Id);
+
+
                     }
+
                 }
 
                 if (isExecCode) {
+
                     _zend_execute_ex(execute_data TSRMLS_CC);
+
                 }
+
+//                int isExecCode = 1;
+//                if (classPointer != NULL) {
+//                    //在Class Ponter基础上进行 函数 扩充
+//                    Func_Trace_Data *funcPointer = Trace_Class_Function_Pointer(classPointer, funcName);
+//                    if (funcPointer != NULL) {
+//                        isExecCode = 0;
+//                        Trace_Performance_Begin(classPointer, funcPointer);
+//                        _zend_execute_ex(execute_data TSRMLS_CC);
+//                        Trace_Performance_End(classPointer, funcPointer);
+//                    }
+//                }
+//
+//                if (isExecCode) {
+//                    _zend_execute_ex(execute_data TSRMLS_CC);
+//                }
 
             }
         }
@@ -186,22 +211,28 @@ PHP_RINIT_FUNCTION (PulseFlow) {
 }
 
 PHP_RSHUTDOWN_FUNCTION (PulseFlow) {
-    sds dataPak;
-    //int a;
-  //  UT_string *dataPak;
-   // utstring_new(dataPak);
 
-    dataPak = sdsempty();
+    //  int a;
+    // debug_save_shm();
+    //  sds dataPak;
+    //int a;
+    //  UT_string *dataPak;
+    // utstring_new(dataPak);
+
+    //  dataPak = sdsempty();
 //
-    dataPak = EncodeData(dataPak TSRMLS_CC); //字符串序列编码
+    // dataPak = EncodeData(dataPak TSRMLS_CC); //字符串序列编码
 
 //
 //    printf("%s\n",dataPak);
-    SendData(dataPak TSRMLS_CC);
+    // int a;
+    // printf("%d\n",PULSEFLOW_G(Trace_Shm_Id));
+    int ret = SendData(PULSEFLOW_G(Trace_Shm_Id) TSRMLS_CC);
 
+    //printf("%d\n",ret);
 //
 
-    sdsfree(dataPak);
+    //  sdsfree(dataPak);
     // utstring_clear(dataPak);
 
     //utstring_free(dataPak);
@@ -211,9 +242,9 @@ PHP_RSHUTDOWN_FUNCTION (PulseFlow) {
     FREE_disable_trace_class_hash(TSRMLS_C);
 
 
-    Trace_Clean_Class_Struct(TSRMLS_C);
+    //   Trace_Clean_Class_Struct(TSRMLS_C);
 
-    Trace_Clean_Func_Struct(TSRMLS_C);
+    // Trace_Clean_Func_Struct(TSRMLS_C);
 
     return SUCCESS;
 

@@ -57,15 +57,19 @@ struct Class_Trace_Struct {
 
     int funcCount; //当前使用的单元数
 
-    int funcMemoryCount;  //为FuncList分配的总单元数
+  //  int funcMemoryCount;  //为FuncList分配的总单元数
 
-    Func_Trace_Data **FuncList;
+    key_t  FuncList;
 
     size_t memoryUse;
 
     float CpuTimeUse;
 
-    char *className;
+    key_t className;
+
+    unsigned char classNameLen;
+
+    key_t nextClassShmId;
 
     unsigned long classHash;
 };
@@ -80,20 +84,25 @@ struct Func_Trace_Struct {
     size_t useMemoryPeakStart;
     size_t useMemoryPeak;
 
-    unsigned int classFuncId;
+   // unsigned int classFuncId;
 
     int refCount;
 
-    Class_Trace_Data *ClassAddr;
+    key_t ClassAddr;
 
-    char *funcName;
+    key_t funcName;
 
+    unsigned char funcNameLen;
+
+    key_t nextFuncShmId;
     unsigned long funcHash;
 };
 
 ZEND_BEGIN_MODULE_GLOBALS(PulseFlow)
     zend_bool enabled;
     zend_bool debug;
+
+    key_t Trace_Shm_Id;
 
     char *encode_type;
 
@@ -109,13 +118,13 @@ ZEND_BEGIN_MODULE_GLOBALS(PulseFlow)
     char *disable_trace_class;
     HashTable *disable_trace_class_hash;
 
-    Class_Trace_Data *Class_Trace_List;
-    int Class_Trace_Current_Size;
-    int Class_Trace_Total_Size;
+   // Class_Trace_Data *Class_Trace_List;
+   // int Class_Trace_Current_Size;
+   // int Class_Trace_Total_Size;
 
-    Func_Trace_Data *Func_Trace_List;
-    int Func_Trace_Current_Size;
-    int Func_Trace_Total_Size;
+  //  Func_Trace_Data *Func_Trace_List;
+   // int Func_Trace_Current_Size;
+  //  int Func_Trace_Total_Size;
 ZEND_END_MODULE_GLOBALS(PulseFlow)
 
 
