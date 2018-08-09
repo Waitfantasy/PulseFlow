@@ -187,23 +187,24 @@ PHP_RINIT_FUNCTION (PulseFlow) {
 
 PHP_RSHUTDOWN_FUNCTION (PulseFlow) {
     //PrintClassStruct(TSRMLS_C);
-    UT_string *dataPak;
-    utstring_new(dataPak);
+
+    //UT_string *dataPak;
+   // utstring_new(dataPak);
 
     //struct timeval begintime;
     //getlinuxTime(&begintime);
 
-    EncodeData(dataPak TSRMLS_CC); //字符串序列编码
+    //EncodeData(dataPak TSRMLS_CC); //字符串序列编码
 
-    SendData(dataPak TSRMLS_CC);
+   // SendData(dataPak TSRMLS_CC);
 
    // float esptime = getLinuxTimeUse(&begintime);
 
     //printf("%f\n",esptime);
 
-    utstring_clear(dataPak);
+    //utstring_clear(dataPak);
 
-    utstring_free(dataPak);
+    //utstring_free(dataPak);
 
     FREE_disable_trace_functions_hash(TSRMLS_C);
 

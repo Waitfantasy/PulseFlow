@@ -3,6 +3,7 @@
 #include <sys/msg.h>
 #include <string.h>
 #include <mqueue.h>
+#include "string_hash.h"
 
 #define SVIPC_PAK_MAX_SIZE 2000
 
@@ -189,11 +190,13 @@ static zend_always_inline Class_Trace_Data *Trace_Class_Pointer(zend_string *cla
 
     int classNameLen = className->len;
 
+    unsigned long classHash = BKDRHash(className->val, classNameLen);
+
     int i;
     for (i = 0; i < current_Count; ++i) {
         //从第一个CLASS全局数组开始找Class名相同的指针结构体元素
 
-        if (strcmp(Class_Trace_List_Poniter[i].className, className->val) == 0) {
+        if ( (classHash == Class_Trace_List_Poniter[i].classHash) && memcmp(Class_Trace_List_Poniter[i].className, className->val,classNameLen) == 0) {
             retPoint = Class_Trace_List_Poniter + i;
             break;
         }
@@ -248,8 +251,10 @@ static zend_always_inline Class_Trace_Data *Trace_Class_Pointer(zend_string *cla
             //当前结构体内存大小足够使用，进行填充
             // free(Class_Trace_List[current_Count].className);  //释放内存 避免内存区异常数据区 此处代码存在破坏内存区数据的风险
             Class_Trace_List_Poniter[current_Count].className = malloc(sizeof(char) * (classNameLen + 1));
-            strncpy(Class_Trace_List_Poniter[current_Count].className, className->val, classNameLen); //使用strcpy安全函数
+            memcpy(Class_Trace_List_Poniter[current_Count].className, className->val, classNameLen); //使用strcpy安全函数
             Class_Trace_List_Poniter[current_Count].className[classNameLen] = '\0';
+
+            Class_Trace_List_Poniter[current_Count].classHash = classHash;
 
             retPoint = Class_Trace_List_Poniter + current_Count;
 
@@ -311,11 +316,13 @@ Trace_Class_Function_Pointer(Class_Trace_Data *classPointer, zend_string *funcNa
 
     int funcNameLen = funcName->len;
 
+    unsigned long funcHash = BKDRHash(funcName->val, funcNameLen);
+
     int i;
     for (i = 0; i < current_Count; ++i) {
         //从第一个FUNC全局数组开始找FUNC名相同的指针结构体元素
 
-        if ((strcmp(Func_Trace_List_Poniter[i].funcName, funcName->val) == 0) &&
+        if ((funcHash == Func_Trace_List_Poniter[i].funcHash) && (memcmp(Func_Trace_List_Poniter[i].funcName, funcName->val,funcNameLen) == 0) &&
             (Func_Trace_List_Poniter[i].ClassAddr == classPointer)) {
             //在全局函数指针列表中找到了这个函数，则进行指针赋值
             retPoint = Func_Trace_List_Poniter + i;
@@ -365,8 +372,10 @@ Trace_Class_Function_Pointer(Class_Trace_Data *classPointer, zend_string *funcNa
             Func_Trace_List_Poniter[current_Count].classFuncId = classPointer->funcCount;
 
             Func_Trace_List_Poniter[current_Count].funcName = malloc(sizeof(char) * (funcNameLen + 1));
-            strncpy(Func_Trace_List_Poniter[current_Count].funcName, funcName->val, funcNameLen); //使用strcpy安全函数
+            memcpy(Func_Trace_List_Poniter[current_Count].funcName, funcName->val, funcNameLen); //使用strcpy安全函数
             Func_Trace_List_Poniter[current_Count].funcName[funcNameLen] = '\0';
+
+            Func_Trace_List_Poniter[current_Count].funcHash = funcHash;
 
             //至此 已经完成函数结构体内存全部分配 ，但是没有完全构造链接化
 
@@ -599,7 +608,7 @@ static zend_always_inline int SendDataToSVIPC(UT_string *dataPak TSRMLS_DC) {
 
             my_message.message_type = 1;
 
-            strcpy(my_message.message_text.buf,dataPak->d);
+            memcpy(my_message.message_text.buf,dataPak->d,utstring_len(dataPak));
 
             msgsnd (server_qid, &my_message, sizeof (struct message_text), IPC_NOWAIT);
 
