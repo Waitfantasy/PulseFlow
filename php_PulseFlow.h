@@ -50,6 +50,7 @@ typedef struct Function_Prof_Struct {
     unsigned int memoryUse;
     unsigned int cpuTimeUse;
     unsigned int refcount;
+    unsigned long funcNameHash;
 } Function_Prof_Data ;
 
 ZEND_BEGIN_MODULE_GLOBALS(PulseFlow)
@@ -69,7 +70,7 @@ ZEND_BEGIN_MODULE_GLOBALS(PulseFlow)
     unsigned int classDisableHashListSize; //4
 
     Function_Prof_Data Function_Prof_List[FUNCTION_PROF_LIST_SIZE];
-    unsigned Function_Prof_List_current_Size;
+    unsigned int Function_Prof_List_current_Size;
 ZEND_END_MODULE_GLOBALS(PulseFlow)
 
 

@@ -97,10 +97,13 @@ PHP_MINIT_FUNCTION (PulseFlow) {
     REGISTER_INI_ENTRIES();
     Init_Class_Disable_Hash_List();
     Init_Func_Disable_Hash_List();
-
     //  memset(&PULSEFLOW_G(my_message), 0, sizeof(PULSEFLOW_G(my_message))); //初始化返回结果结构体
     //_zend_execute_internal = zend_execute_internal;
     // zend_execute_internal = PulseFlow_xhprof_execute_internal;
+
+    memset(&PULSEFLOW_G(Function_Prof_List), 0, sizeof(PULSEFLOW_G(Function_Prof_List)));
+    PULSEFLOW_G(Function_Prof_List_current_Size) = 0;
+
     _zend_execute_ex = zend_execute_ex;
     zend_execute_ex = PulseFlow_xhprof_execute_ex;
     return SUCCESS;
@@ -112,6 +115,9 @@ ZEND_DLEXPORT void PulseFlow_xhprof_execute_ex(zend_execute_data *execute_data) 
         _zend_execute_ex(execute_data);
 
     } else {
+
+        unsigned long classNameHash = 0;
+        unsigned long funcNameHash = 0;
         if (execute_data != NULL) {
 
             // zend_string *className = tracing_get_class_name(execute_data TSRMLS_CC);
@@ -119,7 +125,6 @@ ZEND_DLEXPORT void PulseFlow_xhprof_execute_ex(zend_execute_data *execute_data) 
             // zend_string *funcName = tracing_get_function_name(execute_data TSRMLS_CC);
             // zend_string *funcName  = execute_data->func->common.function_name;
             zend_string *className = NULL, *funcName = NULL; // = execute_data->func->common.scope->name;
-
 
             if (execute_data->func->common.scope != NULL) {
                 className = execute_data->func->common.scope->name;
@@ -132,13 +137,15 @@ ZEND_DLEXPORT void PulseFlow_xhprof_execute_ex(zend_execute_data *execute_data) 
 
                 _zend_execute_ex(execute_data TSRMLS_CC);
 
-            } else if (Exist_In_Hash_List(funcName->val, PULSEFLOW_G(FuncDisableHashList),
-                                          PULSEFLOW_G(FuncDisableHashListSize))) {
+            } else if (funcNameHash = BKDRHash(funcName->val, funcName->len) &&
+                                      Exist_In_Hash_List(funcNameHash, PULSEFLOW_G(FuncDisableHashList),
+                                                         PULSEFLOW_G(FuncDisableHashListSize))) {
 
                 _zend_execute_ex(execute_data TSRMLS_CC);
 
-            } else if (Exist_In_Hash_List(className->val, PULSEFLOW_G(classDisableHashList),
-                                          PULSEFLOW_G(classDisableHashListSize))) {
+            } else if (classNameHash = BKDRHash(className->val, className->len) &&
+                                       Exist_In_Hash_List(classNameHash, PULSEFLOW_G(classDisableHashList),
+                                                          PULSEFLOW_G(classDisableHashListSize))) {
 
                 _zend_execute_ex(execute_data TSRMLS_CC);
 
@@ -156,6 +163,7 @@ ZEND_DLEXPORT void PulseFlow_xhprof_execute_ex(zend_execute_data *execute_data) 
                 _zend_execute_ex(execute_data TSRMLS_CC);
 
                 Simple_Trace_Performance_End(&CpuTimeStart, &useMemoryStart, &useCpuTime, &useMemory TSRMLS_CC);
+                int funcArrayPointer = getFuncArrayId(funcName, className,funcNameHash);
 
 //                unsigned int Index = PULSEFLOW_G(traceStrPointer);
 //

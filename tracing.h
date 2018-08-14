@@ -11,11 +11,11 @@ ZEND_DECLARE_MODULE_GLOBALS(PulseFlow)
 
 static zend_always_inline zend_string *tracing_get_class_name(zend_execute_data *data TSRMLS_DC) {
 
-//    if (!data) {
-//
-//        return NULL;
-//
-//    }
+    if (!data) {
+
+        return NULL;
+
+    }
 
 
     if (data->func->common.scope != NULL) {
@@ -30,11 +30,11 @@ static zend_always_inline zend_string *tracing_get_class_name(zend_execute_data 
 
 static zend_always_inline zend_string *tracing_get_function_name(zend_execute_data *data TSRMLS_DC) {
 
-//    if (!data) {
-//
-//        return NULL;
-//
-//    }
+    if (!data) {
+
+        return NULL;
+
+    }
 
     if (!data->func->common.function_name) {
 
@@ -129,14 +129,14 @@ static zend_always_inline void Init_Func_Disable_Hash_List() {
 }
 
 
-static zend_always_inline int Exist_In_Hash_List(char *str, unsigned long *hashList , int hashListLen){  //1:存在 0：不存在
-    int strlength = strlen(str);
-
-    if(strlength == 0 ){
-        return 0;
-    }
-
-    unsigned long strhash = BKDRHash(str,strlength);
+static zend_always_inline int Exist_In_Hash_List(unsigned long strhash, unsigned long *hashList , int hashListLen){  //1:存在 0：不存在
+//    int strlength = strlen(str);
+//
+//    if(strlength == 0 ){
+//        return 0;
+//    }
+//
+//    unsigned long strhash = BKDRHash(str,strlength);
 
     int i=0;
 
@@ -825,4 +825,35 @@ char *fast_strstr(const char *haystack, const char *needle)
     }
 
     return NULL;
+}
+
+static zend_always_inline int getFuncArrayId(zend_string *funcName , zend_string *className, unsigned long funcNameHash){
+    unsigned int FuncListSize = PULSEFLOW_G(Function_Prof_List_current_Size);
+
+    int funcArrayId = -1;
+    for (int i = 0; i < FuncListSize; ++i) {
+        if(PULSEFLOW_G(Function_Prof_List)[i].funcNameHash == funcNameHash){
+            funcArrayId = i;
+            return funcArrayId;
+        }
+    }
+
+    unsigned int funcCurrentPointer = PULSEFLOW_G(Function_Prof_List_current_Size) ;
+
+    if (funcArrayId == -1 &&  funcCurrentPointer< FUNCTION_PROF_LIST_SIZE){
+        //没有找到 创建新的
+        PULSEFLOW_G(Function_Prof_List)[funcCurrentPointer].funcNameHash = funcNameHash;
+
+        memcpy(PULSEFLOW_G(Function_Prof_List)[funcCurrentPointer].functionName,funcName->val,FUNC_NAME_MAX_SIZE);
+
+        memcpy(PULSEFLOW_G(Function_Prof_List)[funcCurrentPointer].className,className->val,CLASS_NAME_MAX_SIZE);
+
+        funcArrayId = funcCurrentPointer;
+        PULSEFLOW_G(Function_Prof_List_current_Size)++;
+
+        return funcArrayId;
+    }
+
+    return funcArrayId;
+
 }
