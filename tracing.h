@@ -176,26 +176,26 @@ Simple_Trace_Performance_End(struct timeval *CpuTimeStart, size_t *useMemoryStar
     *useMemory = (zend_memory_usage(0 TSRMLS_CC) - (*useMemoryStart));
 }
 
-static zend_always_inline int SendDataToSVIPC(TSRMLS_D) {
-
-    key_t server_queue_key, server_qid;
-
-    int ret = 1;
-
-    if ((server_queue_key = ftok(PULSEFLOW_G(svipc_name), PULSEFLOW_G(svipc_gj_id))) != -1) {
-        if ((server_qid = msgget(server_queue_key, 0)) != -1) {
-            PULSEFLOW_G(my_message).message_type = 1;
-            msgsnd(server_qid, &PULSEFLOW_G(my_message),  PULSEFLOW_G(my_message).size + sizeof(long) + sizeof(unsigned int) , IPC_NOWAIT);
-        } else {
-            ret = 0;
-        }
-
-    } else {
-        ret = 0;
-    }
-
-    return ret;
-}
+//static zend_always_inline int SendDataToSVIPC(TSRMLS_D) {
+//
+//    key_t server_queue_key, server_qid;
+//
+//    int ret = 1;
+//
+//    if ((server_queue_key = ftok(PULSEFLOW_G(svipc_name), PULSEFLOW_G(svipc_gj_id))) != -1) {
+//        if ((server_qid = msgget(server_queue_key, 0)) != -1) {
+//            PULSEFLOW_G(my_message).message_type = 1;
+//            msgsnd(server_qid, &PULSEFLOW_G(my_message),  PULSEFLOW_G(my_message).size + sizeof(long) + sizeof(unsigned int) , IPC_NOWAIT);
+//        } else {
+//            ret = 0;
+//        }
+//
+//    } else {
+//        ret = 0;
+//    }
+//
+//    return ret;
+//}
 
 //static zend_always_inline int SendDataToPosixIPC(char *dataPak TSRMLS_DC) {
 //

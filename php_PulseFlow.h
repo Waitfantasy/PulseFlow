@@ -43,6 +43,15 @@ extern zend_module_entry PulseFlow_module_entry;
 	and END macros here:
 */
 
+
+typedef struct Function_Prof_Struct {
+    char className[CLASS_NAME_MAX_SIZE];
+    char functionName[FUNC_NAME_MAX_SIZE];
+    unsigned int memoryUse;
+    unsigned int cpuTimeUse;
+    unsigned int refcount;
+} Function_Prof_Data ;
+
 ZEND_BEGIN_MODULE_GLOBALS(PulseFlow)
     zend_bool enabled;  //1
     char *disable_trace_functions; //8
@@ -50,8 +59,8 @@ ZEND_BEGIN_MODULE_GLOBALS(PulseFlow)
     char *svipc_name; //8
     unsigned int svipc_gj_id;   //4
 
-    unsigned int traceStrPointer;  //4
-    struct message my_message;
+   // unsigned int traceStrPointer;  //4
+   // struct message my_message;
 
     unsigned long classDisableHashList[CLASS_DISABLED_HASH_LIST_SIZE]; //8*n
     unsigned long FuncDisableHashList[FUNC_DISABLED_HASH_LIST_SIZE];  //8*n
@@ -59,6 +68,8 @@ ZEND_BEGIN_MODULE_GLOBALS(PulseFlow)
     unsigned int FuncDisableHashListSize; //4
     unsigned int classDisableHashListSize; //4
 
+    Function_Prof_Data Function_Prof_List[FUNCTION_PROF_LIST_SIZE];
+    unsigned Function_Prof_List_current_Size;
 ZEND_END_MODULE_GLOBALS(PulseFlow)
 
 

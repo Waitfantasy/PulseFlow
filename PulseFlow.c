@@ -79,13 +79,15 @@ ZEND_DLEXPORT void PulseFlow_xhprof_execute_ex(zend_execute_data *execute_data);
 
 /* {{{ php_PulseFlow_init_globals
  */
-/* Uncomment this function if you have INI entries
+// Uncomment this function if you have INI entries
+/*
  static void php_PulseFlow_init_globals(zend_PulseFlow_globals *PulseFlow_globals)
  {
- PulseFlow_globals->global_value = 0;
- PulseFlow_globals->global_string = NULL;
+     PulseFlow_globals->Function_Prof_List_current_Size = 0;
+     memset(&PulseFlow_globals->Function_Prof_List, 0, sizeof(Function_Prof_Data)*FUNCTION_PROF_LIST_SIZE);
+     printf("hello\n");
  }
- */
+*/
 /* }}} */
 
 /* {{{ PHP_MINIT_FUNCTION
@@ -155,53 +157,53 @@ ZEND_DLEXPORT void PulseFlow_xhprof_execute_ex(zend_execute_data *execute_data) 
 
                 Simple_Trace_Performance_End(&CpuTimeStart, &useMemoryStart, &useCpuTime, &useMemory TSRMLS_CC);
 
-                unsigned int Index = PULSEFLOW_G(traceStrPointer);
-
-                int tempsize = 0;
-
-                if (Index < TRACE_STR_MAX_SIZE /*&& (useCpuTime || useMemory)*/) {
-//                    tempsize = snprintf(&PULSEFLOW_G(my_message).message_text.buf[Index], TRACE_STR_MAX_SIZE - Index-1, "%s*%s*%.3f*%ld|", className->val, funcName->val,
-//                                            useCpuTime, useMemory);
+//                unsigned int Index = PULSEFLOW_G(traceStrPointer);
 //
-//                    if(tempsize >0){
+//                int tempsize = 0;
+//
+//                if (Index < TRACE_STR_MAX_SIZE /*&& (useCpuTime || useMemory)*/) {
+////                    tempsize = snprintf(&PULSEFLOW_G(my_message).message_text.buf[Index], TRACE_STR_MAX_SIZE - Index-1, "%s*%s*%.3f*%ld|", className->val, funcName->val,
+////                                            useCpuTime, useMemory);
+////
+////                    if(tempsize >0){
+////                        Index += tempsize;
+////
+////                        PULSEFLOW_G(my_message).message_text.buf[Index] = '\0';
+////
+////                        PULSEFLOW_G(my_message).size = Index;
+////
+////                        PULSEFLOW_G(traceStrPointer) = Index;
+////
+////                    }
+////
+////                    return ;
+//
+//                    strcat(&PULSEFLOW_G(my_message).message_text.buf[Index], className->val);
+//                    Index += className->len;
+//                    strcat(&PULSEFLOW_G(my_message).message_text.buf[Index], "*");
+//                    Index++;
+//
+//                    strcat(&PULSEFLOW_G(my_message).message_text.buf[Index], funcName->val);
+//                    Index += funcName->len;
+//                    strcat(&PULSEFLOW_G(my_message).message_text.buf[Index], "*");
+//                    Index++;
+//
+//                    tempsize = snprintf(&PULSEFLOW_G(my_message).message_text.buf[Index],
+//                                        TRACE_STR_MAX_SIZE - Index - 1, "%u*%ld", useCpuTime, useMemory);
+//
+//                    if (tempsize > 0) {
+//
 //                        Index += tempsize;
-//
-//                        PULSEFLOW_G(my_message).message_text.buf[Index] = '\0';
-//
-//                        PULSEFLOW_G(my_message).size = Index;
-//
-//                        PULSEFLOW_G(traceStrPointer) = Index;
-//
 //                    }
 //
-//                    return ;
-
-                    strcat(&PULSEFLOW_G(my_message).message_text.buf[Index], className->val);
-                    Index += className->len;
-                    strcat(&PULSEFLOW_G(my_message).message_text.buf[Index], "*");
-                    Index++;
-
-                    strcat(&PULSEFLOW_G(my_message).message_text.buf[Index], funcName->val);
-                    Index += funcName->len;
-                    strcat(&PULSEFLOW_G(my_message).message_text.buf[Index], "*");
-                    Index++;
-
-                    tempsize = snprintf(&PULSEFLOW_G(my_message).message_text.buf[Index],
-                                        TRACE_STR_MAX_SIZE - Index - 1, "%u*%ld", useCpuTime, useMemory);
-
-                    if (tempsize > 0) {
-
-                        Index += tempsize;
-                    }
-
-                    strcat(&PULSEFLOW_G(my_message).message_text.buf[Index], "|");
-                    Index++;
-
-                    PULSEFLOW_G(my_message).message_text.buf[Index] = '\0';
-                    PULSEFLOW_G(my_message).size = Index;
-                    PULSEFLOW_G(traceStrPointer) = Index;
-
-                }
+//                    strcat(&PULSEFLOW_G(my_message).message_text.buf[Index], "|");
+//                    Index++;
+//
+//                    PULSEFLOW_G(my_message).message_text.buf[Index] = '\0';
+//                    PULSEFLOW_G(my_message).size = Index;
+//                    PULSEFLOW_G(traceStrPointer) = Index;
+//
+//                }
             }
 
         }
@@ -221,16 +223,16 @@ PHP_RINIT_FUNCTION (PulseFlow) {
     ZEND_TSRMLS_CACHE_UPDATE();
 #endif
 
-    PULSEFLOW_G(traceStrPointer) = 0;
+//    PULSEFLOW_G(traceStrPointer) = 0;
     return SUCCESS;
 }
 
 PHP_RSHUTDOWN_FUNCTION (PulseFlow) {
 //printf("%d\n",PULSEFLOW_G(my_message).size);
 //    printf("%s\n",PULSEFLOW_G(my_message).message_text.buf);
-    if (PULSEFLOW_G(my_message).size) {
-        SendDataToSVIPC(TSRMLS_C);
-    }
+//    if (PULSEFLOW_G(my_message).size) {
+//        SendDataToSVIPC(TSRMLS_C);
+//    }
 
     return SUCCESS;
 

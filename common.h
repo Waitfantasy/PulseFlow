@@ -23,6 +23,18 @@
     #define SVIPC_PAK_MAX_SIZE TRACE_STR_MAX_SIZE
 #endif
 
+#ifndef CLASS_NAME_MAX_SIZE
+    #define CLASS_NAME_MAX_SIZE 20
+#endif
+
+#ifndef FUNC_NAME_MAX_SIZE
+    #define FUNC_NAME_MAX_SIZE 20
+#endif
+
+
+#ifndef FUNCTION_PROF_LIST_SIZE
+    #define FUNCTION_PROF_LIST_SIZE 50
+#endif
 
 struct message_text {
     char buf[SVIPC_PAK_MAX_SIZE];
