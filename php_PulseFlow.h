@@ -93,6 +93,7 @@ extern zend_module_entry PulseFlow_module_entry;
 //    unsigned long funcHash;
 //};
 
+
 ZEND_BEGIN_MODULE_GLOBALS(PulseFlow)
     UT_string *traceData;
 
