@@ -15,7 +15,6 @@
  | Author:                                                              |
  +----------------------------------------------------------------------+
  */
-#include "stdio.h"
 /* $Id$ */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -28,24 +27,18 @@
 #include "ext/standard/info.h"
 #include "php_PulseFlow.h"
 #include "tracing.h"
-#include "utstring.h"
 
 ZEND_DECLARE_MODULE_GLOBALS(PulseFlow)
 
-#define TEMP_STR_MAX_SIZE 300
-#define TEMP_STR_MAX_SIZE_LESS 299
 /* True global resources - no need for thread safety here */
-static int le_PulseFlow;
-
 PHP_INI_BEGIN()
                 STD_PHP_INI_ENTRY
                 ("PulseFlow.enabled", "0", PHP_INI_ALL, OnUpdateBool, enabled,
                  zend_PulseFlow_globals, PulseFlow_globals)
 
-                STD_PHP_INI_ENTRY
-                ("PulseFlow.debug", "0", PHP_INI_ALL, OnUpdateBool, debug,
-                 zend_PulseFlow_globals, PulseFlow_globals)
-
+//                STD_PHP_INI_ENTRY
+//                ("PulseFlow.debug", "0", PHP_INI_ALL, OnUpdateBool, debug,
+//                 zend_PulseFlow_globals, PulseFlow_globals)
                 STD_PHP_INI_ENTRY
                 ("PulseFlow.disable_trace_functions", "", PHP_INI_ALL, OnUpdateString, disable_trace_functions,
                  zend_PulseFlow_globals, PulseFlow_globals)
@@ -54,17 +47,17 @@ PHP_INI_BEGIN()
                 ("PulseFlow.disable_trace_class", "", PHP_INI_ALL, OnUpdateString, disable_trace_class,
                  zend_PulseFlow_globals, PulseFlow_globals)
 
-                STD_PHP_INI_ENTRY
-                ("PulseFlow.encode_type", "json", PHP_INI_ALL, OnUpdateString, encode_type,
-                 zend_PulseFlow_globals, PulseFlow_globals)
+//                STD_PHP_INI_ENTRY
+//                ("PulseFlow.encode_type", "json", PHP_INI_ALL, OnUpdateString, encode_type,
+//                 zend_PulseFlow_globals, PulseFlow_globals)
 
-                STD_PHP_INI_ENTRY
-                ("PulseFlow.send_type", "posix", PHP_INI_ALL, OnUpdateString, send_type,
-                 zend_PulseFlow_globals, PulseFlow_globals)
+//                STD_PHP_INI_ENTRY
+//                ("PulseFlow.send_type", "posix", PHP_INI_ALL, OnUpdateString, send_type,
+//                 zend_PulseFlow_globals, PulseFlow_globals)
 
-                STD_PHP_INI_ENTRY
-                ("PulseFlow.posix_name", "/PulseFlow_posix_ipc", PHP_INI_ALL, OnUpdateString, posix_name,
-                 zend_PulseFlow_globals, PulseFlow_globals)
+//                STD_PHP_INI_ENTRY
+//                ("PulseFlow.posix_name", "/PulseFlow_posix_ipc", PHP_INI_ALL, OnUpdateString, posix_name,
+//                 zend_PulseFlow_globals, PulseFlow_globals)
 
                 STD_PHP_INI_ENTRY
                 ("PulseFlow.svipc_name", "/dev/shm/PulseFlow_sv_ipc", PHP_INI_ALL, OnUpdateString, svipc_name,
@@ -73,7 +66,6 @@ PHP_INI_BEGIN()
                 STD_PHP_INI_ENTRY
                 ("PulseFlow.svipc_pj_id", "1000", PHP_INI_ALL, OnUpdateLong, svipc_gj_id,
                  zend_PulseFlow_globals, PulseFlow_globals)
-
 
 PHP_INI_END()
 
@@ -98,101 +90,118 @@ ZEND_DLEXPORT void PulseFlow_xhprof_execute_ex(zend_execute_data *execute_data);
 
 /* {{{ PHP_MINIT_FUNCTION
  */
+
 PHP_MINIT_FUNCTION (PulseFlow) {
-
     REGISTER_INI_ENTRIES();
-
     Init_Class_Disable_Hash_List();
     Init_Func_Disable_Hash_List();
 
+    //  memset(&PULSEFLOW_G(my_message), 0, sizeof(PULSEFLOW_G(my_message))); //初始化返回结果结构体
     //_zend_execute_internal = zend_execute_internal;
     // zend_execute_internal = PulseFlow_xhprof_execute_internal;
-
     _zend_execute_ex = zend_execute_ex;
-
     zend_execute_ex = PulseFlow_xhprof_execute_ex;
-
     return SUCCESS;
 }
 
 ZEND_DLEXPORT void PulseFlow_xhprof_execute_ex(zend_execute_data *execute_data) {
-
     if (!PULSEFLOW_G(enabled)) {
 
         _zend_execute_ex(execute_data);
 
     } else {
-
         if (execute_data != NULL) {
 
-            zend_string *className = tracing_get_class_name(execute_data TSRMLS_CC);
+            // zend_string *className = tracing_get_class_name(execute_data TSRMLS_CC);
 
-            zend_string *funcName = tracing_get_function_name(execute_data TSRMLS_CC);
+            // zend_string *funcName = tracing_get_function_name(execute_data TSRMLS_CC);
+            // zend_string *funcName  = execute_data->func->common.function_name;
+            zend_string *className = NULL, *funcName = NULL; // = execute_data->func->common.scope->name;
+
+
+            if (execute_data->func->common.scope != NULL) {
+                className = execute_data->func->common.scope->name;
+            }
+            if (execute_data->func->common.function_name) {
+                funcName = execute_data->func->common.function_name;
+            }
 
             if (funcName == NULL || className == NULL) {
 
                 _zend_execute_ex(execute_data TSRMLS_CC);
 
-            } else if (Exist_In_Hash_List(funcName->val,PULSEFLOW_G(FuncDisableHashList),PULSEFLOW_G(FuncDisableHashListSize))) {
+            } else if (Exist_In_Hash_List(funcName->val, PULSEFLOW_G(FuncDisableHashList),
+                                          PULSEFLOW_G(FuncDisableHashListSize))) {
 
                 _zend_execute_ex(execute_data TSRMLS_CC);
 
-            } else if (Exist_In_Hash_List(className->val,PULSEFLOW_G(classDisableHashList),PULSEFLOW_G(classDisableHashListSize))) {
+            } else if (Exist_In_Hash_List(className->val, PULSEFLOW_G(classDisableHashList),
+                                          PULSEFLOW_G(classDisableHashListSize))) {
 
                 _zend_execute_ex(execute_data TSRMLS_CC);
 
             } else {
 
-                // funcName and ClassName all not NULL
-                // Class_Trace_Data *classPointer = Trace_Class_Pointer(className TSRMLS_CC);
 
-                //对CPU 和 内存做记录
                 struct timeval CpuTimeStart;
-                float useCpuTime = 0;
+                unsigned int useCpuTime = 0;
 
                 size_t useMemoryStart;
                 size_t useMemory = 0;
-                Simple_Trace_Performance_Begin(&CpuTimeStart, &useMemoryStart);
+
+                Simple_Trace_Performance_Begin(&CpuTimeStart, &useMemoryStart TSRMLS_CC);
 
                 _zend_execute_ex(execute_data TSRMLS_CC);
 
-                Simple_Trace_Performance_End(&CpuTimeStart, &useMemoryStart, &useCpuTime, &useMemory);
+                Simple_Trace_Performance_End(&CpuTimeStart, &useMemoryStart, &useCpuTime, &useMemory TSRMLS_CC);
 
-                char temp[TEMP_STR_MAX_SIZE];
+                unsigned int Index = PULSEFLOW_G(traceStrPointer);
 
-                int tempsize = snprintf(temp, TEMP_STR_MAX_SIZE_LESS, "%s*%s*%f*%ld|", className->val, funcName->val,
-                                        useCpuTime, useMemory);
+                int tempsize = 0;
 
-                if (PULSEFLOW_G(traceStrPointer) + tempsize < 256*1024){
-                    memcpy(PULSEFLOW_G(traceStr) + PULSEFLOW_G(traceStrPointer), temp, tempsize);
-                    PULSEFLOW_G(traceStrPointer) += tempsize ;
-                }
-
+                if (Index < TRACE_STR_MAX_SIZE /*&& (useCpuTime || useMemory)*/) {
+//                    tempsize = snprintf(&PULSEFLOW_G(my_message).message_text.buf[Index], TRACE_STR_MAX_SIZE - Index-1, "%s*%s*%.3f*%ld|", className->val, funcName->val,
+//                                            useCpuTime, useMemory);
 //
-//                utstring_printf(PULSEFLOW_G(traceData), "%s*%s*%f*%ld|", className->val,
-//                                funcName->val, useCpuTime, useMemory);
-
-                //  printf("%s.%s == cpu time : %f  memory: %ld\n",className->val,funcName->val,useCpuTime,useMemory);
-
-
-//                int isExecCode = 1;
-//                if (classPointer != NULL) {
-//                    //在Class Ponter基础上进行 函数 扩充
-//                    Func_Trace_Data *funcPointer = Trace_Class_Function_Pointer(classPointer, funcName);
-//                    if (funcPointer != NULL) {
-//                        isExecCode = 0;
-//                        Trace_Performance_Begin(classPointer, funcPointer);
-//                        _zend_execute_ex(execute_data TSRMLS_CC);
-//                        Trace_Performance_End(classPointer, funcPointer);
+//                    if(tempsize >0){
+//                        Index += tempsize;
+//
+//                        PULSEFLOW_G(my_message).message_text.buf[Index] = '\0';
+//
+//                        PULSEFLOW_G(my_message).size = Index;
+//
+//                        PULSEFLOW_G(traceStrPointer) = Index;
+//
 //                    }
-//                }
 //
-//                if (isExecCode) {
-//                    _zend_execute_ex(execute_data TSRMLS_CC);
-//                }
+//                    return ;
 
+                    strcat(&PULSEFLOW_G(my_message).message_text.buf[Index], className->val);
+                    Index += className->len;
+                    strcat(&PULSEFLOW_G(my_message).message_text.buf[Index], "*");
+                    Index++;
 
+                    strcat(&PULSEFLOW_G(my_message).message_text.buf[Index], funcName->val);
+                    Index += funcName->len;
+                    strcat(&PULSEFLOW_G(my_message).message_text.buf[Index], "*");
+                    Index++;
 
+                    tempsize = snprintf(&PULSEFLOW_G(my_message).message_text.buf[Index],
+                                        TRACE_STR_MAX_SIZE - Index - 1, "%u*%ld", useCpuTime, useMemory);
+
+                    if (tempsize > 0) {
+
+                        Index += tempsize;
+                    }
+
+                    strcat(&PULSEFLOW_G(my_message).message_text.buf[Index], "|");
+                    Index++;
+
+                    PULSEFLOW_G(my_message).message_text.buf[Index] = '\0';
+                    PULSEFLOW_G(my_message).size = Index;
+                    PULSEFLOW_G(traceStrPointer) = Index;
+
+                }
             }
 
         }
@@ -212,59 +221,22 @@ PHP_RINIT_FUNCTION (PulseFlow) {
     ZEND_TSRMLS_CACHE_UPDATE();
 #endif
 
-  //  INIT_disable_trace_functions_hash(TSRMLS_C);
-
-   // INIT_disable_trace_class_hash(TSRMLS_C);
-    // utstring_new(PULSEFLOW_G(traceData));
-
     PULSEFLOW_G(traceStrPointer) = 0;
-    //  INIT_Class_Trace_Struct();
-
     return SUCCESS;
 }
 
 PHP_RSHUTDOWN_FUNCTION (PulseFlow) {
-    //PrintClassStruct(TSRMLS_C);
-
-    //UT_string *dataPak;
-    // utstring_new(dataPak);
-
-    //struct timeval begintime;
-    //getlinuxTime(&begintime);
-
-    //EncodeData(dataPak TSRMLS_CC); //字符串序列编码
-
-     SendData(PULSEFLOW_G(traceStr) TSRMLS_CC);
-
-    // float esptime = getLinuxTimeUse(&begintime);
-
-    //printf("%f\n",esptime);
-
-   // printf("%s\n",PULSEFLOW_G(traceData)->d);
-
-  //  if(utstring_len(PULSEFLOW_G(traceData))){
-      //  utstring_clear(PULSEFLOW_G(traceData));
-
-      //  utstring_free(PULSEFLOW_G(traceData));
- //   }
-
-   // printf("%s\n",PULSEFLOW_G(traceStr));
-
-    //FREE_disable_trace_functions_hash(TSRMLS_C);
-
-    //FREE_disable_trace_class_hash(TSRMLS_C);
-
-
-    // Trace_Clean_Class_Struct(TSRMLS_C);
-
-    // Trace_Clean_Func_Struct(TSRMLS_C);
+//printf("%d\n",PULSEFLOW_G(my_message).size);
+//    printf("%s\n",PULSEFLOW_G(my_message).message_text.buf);
+    if (PULSEFLOW_G(my_message).size) {
+        SendDataToSVIPC(TSRMLS_C);
+    }
 
     return SUCCESS;
 
 }
 
-static zend_always_inline int PulseFlow_info_print(const char *str) /* {{{ */
-{
+static zend_always_inline int PulseFlow_info_print(const char *str) {
     return php_output_write(str, strlen(str));
 }
 

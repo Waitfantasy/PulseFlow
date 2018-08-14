@@ -1,31 +1,21 @@
-#include "utstring.h"
+//#include "utstring.h"
 #include <sys/ipc.h>
 #include <sys/msg.h>
 #include <string.h>
-#include <mqueue.h>
+//#include <mqueue.h>
+#include <zend_exceptions.h>
 #include "string_hash.h"
-
-#define SVIPC_PAK_MAX_SIZE 2000
-
-struct message_text {
-    int qid;
-    char buf[SVIPC_PAK_MAX_SIZE];
-};
-
-struct message {
-    long message_type;
-    struct message_text message_text;
-};
+#include <stdbool.h>
 
 ZEND_DECLARE_MODULE_GLOBALS(PulseFlow)
 
 static zend_always_inline zend_string *tracing_get_class_name(zend_execute_data *data TSRMLS_DC) {
 
-    if (!data) {
-
-        return NULL;
-
-    }
+//    if (!data) {
+//
+//        return NULL;
+//
+//    }
 
 
     if (data->func->common.scope != NULL) {
@@ -40,11 +30,11 @@ static zend_always_inline zend_string *tracing_get_class_name(zend_execute_data 
 
 static zend_always_inline zend_string *tracing_get_function_name(zend_execute_data *data TSRMLS_DC) {
 
-    if (!data) {
-
-        return NULL;
-
-    }
+//    if (!data) {
+//
+//        return NULL;
+//
+//    }
 
     if (!data->func->common.function_name) {
 
@@ -78,39 +68,6 @@ static zend_always_inline float getLinuxTimeUse(struct timeval *begin TSRMLS_DC)
 
 }
 
-//static zend_always_inline void INIT_disable_trace_functions_hash(TSRMLS_D) {
-//
-//    ALLOC_HASHTABLE(PULSEFLOW_G(disable_trace_functions_hash));
-//
-//    zend_hash_init(PULSEFLOW_G(disable_trace_functions_hash), 0, NULL, NULL, 0);
-//
-//    if (strlen(PULSEFLOW_G(disable_trace_functions))) {
-//
-//        char *blockFunctionList = strtok(PULSEFLOW_G(disable_trace_functions), ",");
-//
-//        while (blockFunctionList != NULL) {
-//
-//            zval zv;
-//            ZVAL_TRUE(&zv);
-//
-//            zend_string *hash_str = zend_string_init(blockFunctionList, strlen(blockFunctionList), 0);
-//
-//            if (!zend_hash_exists(PULSEFLOW_G(disable_trace_functions_hash), hash_str)) {
-//
-//                zend_hash_add(PULSEFLOW_G(disable_trace_functions_hash), hash_str,
-//                              &zv /*ZEND_FILE_LINE_CC */); //修改点1： ZEND_FILE_LINE_CC
-//
-//            }
-//
-//            zend_string_release(hash_str);
-//
-//            blockFunctionList = strtok(NULL, ",");
-//        }
-//
-//    }
-//
-//}
-
 static zend_always_inline void Init_Class_Disable_Hash_List() {
     int i = 0;
     unsigned long strhash = 0;
@@ -122,7 +79,7 @@ static zend_always_inline void Init_Class_Disable_Hash_List() {
         while (blockClass != NULL) {
             strhash = BKDRHash(blockClass, strlen(blockClass));
 
-            if (i < 200) {  //此处需要修改为宏定义
+            if (i < CLASS_DISABLED_HASH_LIST_SIZE) {  //此处需要修改为宏定义
                 PULSEFLOW_G(classDisableHashList)[i] = strhash;
             }else{
                 break;
@@ -152,7 +109,7 @@ static zend_always_inline void Init_Func_Disable_Hash_List() {
 
             strhash = BKDRHash(blockfunc, strlen(blockfunc));
 
-            if (i < 200) {  //此处需要修改为宏定义
+            if (i < FUNC_DISABLED_HASH_LIST_SIZE) {  //此处需要修改为宏定义
 
                 PULSEFLOW_G(FuncDisableHashList)[i] = strhash;
 
@@ -195,7 +152,128 @@ static zend_always_inline int Exist_In_Hash_List(char *str, unsigned long *hashL
 
 }
 
+static zend_always_inline void
+Simple_Trace_Performance_Begin(struct timeval *CpuTimeStart, size_t *useMemoryStart  TSRMLS_DC) {
 
+    gettimeofday(CpuTimeStart TSRMLS_CC, 0);
+
+    *useMemoryStart = zend_memory_usage(0 TSRMLS_CC);
+}
+
+static zend_always_inline void
+Simple_Trace_Performance_End(struct timeval *CpuTimeStart, size_t *useMemoryStart, unsigned int *useCpuTime, size_t *useMemory
+                             TSRMLS_DC) {
+
+    //*useCpuTime = (getLinuxTimeUse(CpuTimeStart TSRMLS_CC));
+    struct timeval endTime;
+
+    getlinuxTime(&endTime TSRMLS_CC);
+
+   // *useCpuTime = timedifference_msec(CpuTimeStart, &endTime TSRMLS_CC);
+
+    *useCpuTime = ((endTime).tv_sec - (*CpuTimeStart).tv_sec) * 1000 + ((endTime).tv_usec - (*CpuTimeStart).tv_usec) / 1000;
+
+    *useMemory = (zend_memory_usage(0 TSRMLS_CC) - (*useMemoryStart));
+}
+
+static zend_always_inline int SendDataToSVIPC(TSRMLS_D) {
+
+    key_t server_queue_key, server_qid;
+
+    int ret = 1;
+
+    if ((server_queue_key = ftok(PULSEFLOW_G(svipc_name), PULSEFLOW_G(svipc_gj_id))) != -1) {
+        if ((server_qid = msgget(server_queue_key, 0)) != -1) {
+            PULSEFLOW_G(my_message).message_type = 1;
+            msgsnd(server_qid, &PULSEFLOW_G(my_message),  PULSEFLOW_G(my_message).size + sizeof(long) + sizeof(unsigned int) , IPC_NOWAIT);
+        } else {
+            ret = 0;
+        }
+
+    } else {
+        ret = 0;
+    }
+
+    return ret;
+}
+
+//static zend_always_inline int SendDataToPosixIPC(char *dataPak TSRMLS_DC) {
+//
+//    int sendlen, ret = 1;
+//
+//    mqd_t mqd = mq_open(PULSEFLOW_G(posix_name), O_WRONLY | O_NONBLOCK);
+//
+//    if (mqd == -1) {
+//
+//        ret = 0;
+//
+//    }
+//
+//    sendlen = mq_send(mqd, dataPak, strlen(dataPak), 0);
+//
+//    if (sendlen == -1) {
+//
+//        ret = 0;
+//
+//    }
+//
+//    mq_close(mqd);
+//
+//    return ret;
+//}
+
+//static zend_always_inline int SendData(struct message * my_message TSRMLS_DC) {
+//
+//    int ret = 0;
+//
+//    if (strcmp(PULSEFLOW_G(send_type), "posix") == 0) {
+//
+//        ret = SendDataToPosixIPC(my_message->message_text.buf TSRMLS_CC);
+//
+//    }
+//
+//    if (strcmp(PULSEFLOW_G(send_type), "svipc") == 0) {
+//
+//        ret = SendDataToSVIPC(my_message TSRMLS_DC);
+//
+//    }
+//
+//    return ret;
+//
+//}
+
+//static zend_always_inline void INIT_disable_trace_functions_hash(TSRMLS_D) {
+//
+//    ALLOC_HASHTABLE(PULSEFLOW_G(disable_trace_functions_hash));
+//
+//    zend_hash_init(PULSEFLOW_G(disable_trace_functions_hash), 0, NULL, NULL, 0);
+//
+//    if (strlen(PULSEFLOW_G(disable_trace_functions))) {
+//
+//        char *blockFunctionList = strtok(PULSEFLOW_G(disable_trace_functions), ",");
+//
+//        while (blockFunctionList != NULL) {
+//
+//            zval zv;
+//            ZVAL_TRUE(&zv);
+//
+//            zend_string *hash_str = zend_string_init(blockFunctionList, strlen(blockFunctionList), 0);
+//
+//            if (!zend_hash_exists(PULSEFLOW_G(disable_trace_functions_hash), hash_str)) {
+//
+//                zend_hash_add(PULSEFLOW_G(disable_trace_functions_hash), hash_str,
+//                              &zv /*ZEND_FILE_LINE_CC */); //修改点1： ZEND_FILE_LINE_CC
+//
+//            }
+//
+//            zend_string_release(hash_str);
+//
+//            blockFunctionList = strtok(NULL, ",");
+//        }
+//
+//    }
+//
+//}
 
 //static zend_always_inline void FREE_disable_trace_functions_hash(TSRMLS_D) {
 //
@@ -584,37 +662,6 @@ static zend_always_inline int Exist_In_Hash_List(char *str, unsigned long *hashL
 //    classPointer->memoryUse += funcPointer->useMemory;
 //}
 
-static zend_always_inline void
-Simple_Trace_Performance_Begin(struct timeval *CpuTimeStart, size_t *useMemoryStart  TSRMLS_DC) {
-
-    // getlinuxTime(CpuTimeStart TSRMLS_CC);
-    gettimeofday(CpuTimeStart TSRMLS_CC, 0);
-
-    *useMemoryStart = zend_memory_usage(0 TSRMLS_CC);
-
-    //  funcPointer->useMemoryPeakStart = zend_memory_peak_usage(0 TSRMLS_CC);
-
-    //  funcPointer->refCount++;
-
-    // classPointer->refCount++;
-
-}
-
-static zend_always_inline void
-Simple_Trace_Performance_End(struct timeval *CpuTimeStart, size_t *useMemoryStart, float *useCpuTime, size_t *useMemory
-                             TSRMLS_DC) {
-
-    *useCpuTime += (getLinuxTimeUse(CpuTimeStart TSRMLS_CC));
-
-    *useMemory += (zend_memory_usage(0 TSRMLS_CC) - (*useMemoryStart));
-
-    //funcPointer->useMemoryPeak += (zend_memory_peak_usage(0 TSRMLS_CC) - funcPointer->useMemoryPeakStart);
-
-    //  classPointer->CpuTimeUse += funcPointer->useCpuTime;
-
-    //  classPointer->memoryUse += funcPointer->useMemory;
-}
-
 //static zend_always_inline void PrintClassStruct(TSRMLS_D) {
 //
 //    int current_Count = PULSEFLOW_G(Class_Trace_Current_Size);
@@ -711,95 +758,71 @@ Simple_Trace_Performance_End(struct timeval *CpuTimeStart, size_t *useMemoryStar
 //
 //}
 
-static zend_always_inline int SendDataToSVIPC(char *dataPak TSRMLS_DC) {
+//static zend_always_inline void EncodeData(UT_string *dataPak TSRMLS_DC) {
+//
+//    if (strcmp(PULSEFLOW_G(encode_type), "json") == 0) {
+//
+////       EncodeRetsultJson(dataPak TSRMLS_CC);
+//
+//    }
+//}
 
-    key_t server_queue_key, server_qid;
+char *fast_strstr(const char *haystack, const char *needle)
+{
+    if (!*needle) // Empty needle.
+        return (char *) haystack;
 
-    struct message my_message;
+    const char    needle_first  = *needle;
 
-    int ret = 1;
+    // Runs strchr() on the first section of the haystack as it has a lower
+    // algorithmic complexity for discarding the first non-matching characters.
+    haystack = strchr(haystack, needle_first);
+    if (!haystack) // First character of needle is not in the haystack.
+        return NULL;
 
-    if ((server_queue_key = ftok(PULSEFLOW_G(svipc_name), PULSEFLOW_G(svipc_gj_id))) != -1) {
+    // First characters of haystack and needle are the same now. Both are
+    // guaranteed to be at least one character long.
+    // Now computes the sum of the first needle_len characters of haystack
+    // minus the sum of characters values of needle.
 
-        if ((server_qid = msgget(server_queue_key, 0)) != -1) {
+    const char   *i_haystack    = haystack + 1
+    ,   *i_needle      = needle   + 1;
 
-            my_message.message_type = 1;
+    unsigned int  sums_diff     = *haystack;
+    bool          identical     = true;
 
-            memcpy(my_message.message_text.buf, dataPak, strlen(dataPak));
-
-            msgsnd(server_qid, &my_message, sizeof(struct message_text), IPC_NOWAIT);
-
-        } else {
-
-            ret = 0;
-
-        }
-
-    } else {
-
-        ret = 0;
-
+    while (*i_haystack && *i_needle) {
+        sums_diff += *i_haystack;
+        sums_diff -= *i_needle;
+        identical &= *i_haystack++ == *i_needle++;
     }
 
-    return ret;
-}
+    // i_haystack now references the (needle_len + 1)-th character.
 
-static zend_always_inline int SendDataToPosixIPC(char *dataPak TSRMLS_DC) {
+    if (*i_needle) // haystack is smaller than needle.
+        return NULL;
+    else if (identical)
+        return (char *) haystack;
 
-    int sendlen, ret = 1;
+    size_t        needle_len    = i_needle - needle;
+    size_t        needle_len_1  = needle_len - 1;
 
-    mqd_t mqd = mq_open(PULSEFLOW_G(posix_name), O_WRONLY | O_NONBLOCK);
+    // Loops for the remaining of the haystack, updating the sum iteratively.
+    const char   *sub_start;
+    for (sub_start = haystack; *i_haystack; i_haystack++) {
+        sums_diff -= *sub_start++;
+        sums_diff += *i_haystack;
 
-    if (mqd == -1) {
-
-        ret = 0;
-
+        // Since the sum of the characters is already known to be equal at that
+        // point, it is enough to check just needle_len-1 characters for
+        // equality.
+        if (
+                sums_diff == 0
+                && needle_first == *sub_start // Avoids some calls to memcmp.
+                && memcmp(sub_start, needle, needle_len_1) == 0
+                )
+            return (char *) sub_start;
     }
 
-    sendlen = mq_send(mqd, dataPak, strlen(dataPak), 0);
-
-    if (sendlen == -1) {
-
-        ret = 0;
-
-    }
-
-    mq_close(mqd);
-
-    return ret;
-}
-
-
-static zend_always_inline void EncodeData(UT_string *dataPak TSRMLS_DC) {
-
-    if (strcmp(PULSEFLOW_G(encode_type), "json") == 0) {
-
-//       EncodeRetsultJson(dataPak TSRMLS_CC);
-
-    }
-}
-
-
-static zend_always_inline int SendData(char *dataPak TSRMLS_DC) {
-
-    int ret = 0;
-
-    //   if(utstring_len(dataPak)){
-
-    if (strcmp(PULSEFLOW_G(send_type), "posix") == 0) {
-
-        ret = SendDataToPosixIPC(dataPak TSRMLS_CC);
-
-    }
-
-    if (strcmp(PULSEFLOW_G(send_type), "svipc") == 0) {
-
-        ret = SendDataToSVIPC(dataPak TSRMLS_CC);
-
-    }
-
-    //  }
-
-    return ret;
-
+    return NULL;
 }

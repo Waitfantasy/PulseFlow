@@ -16,8 +16,7 @@
   +----------------------------------------------------------------------+
 */
 
-/* $Id$ */
-#include "utstring.h"
+#include "common.h"
 
 #ifndef PHP_PULSEFLOW_H
 #define PHP_PULSEFLOW_H
@@ -25,7 +24,7 @@
 extern zend_module_entry PulseFlow_module_entry;
 #define phpext_PulseFlow_ptr &PulseFlow_module_entry
 
-#define PHP_PULSEFLOW_VERSION "0.1.0" /* Replace with version number for your extension */
+#define PHP_PULSEFLOW_VERSION "0.1.1" /* Replace with version number for your extension */
 
 #ifdef PHP_WIN32
 #	define PHP_PULSEFLOW_API __declspec(dllexport)
@@ -44,95 +43,22 @@ extern zend_module_entry PulseFlow_module_entry;
 	and END macros here:
 */
 
-
-//typedef struct Class_Trace_Struct Class_Trace_Data;
-//typedef struct Func_Trace_Struct Func_Trace_Data;
-//
-//#define CLASS_TRACE_RESIZE_STEP 5
-//
-//#define FUNC_TRACE_RESIZE_STEP 10
-//
-//struct Class_Trace_Struct {
-//
-//    int refCount;
-//
-//    int funcCount; //当前使用的单元数
-//
-//    int funcMemoryCount;  //为FuncList分配的总单元数
-//
-//    Func_Trace_Data **FuncList;
-//
-//    size_t memoryUse;
-//
-//    float CpuTimeUse;
-//
-//    char *className;
-//
-//    unsigned long classHash;
-//};
-//
-//struct Func_Trace_Struct {
-//    struct timeval CpuTimeStart;
-//
-//    float useCpuTime;
-//
-//    size_t useMemoryStart;
-//    size_t useMemory;
-//
-//    size_t useMemoryPeakStart;
-//    size_t useMemoryPeak;
-//
-//    unsigned int classFuncId;
-//
-//    int refCount;
-//
-//    Class_Trace_Data *ClassAddr;
-//
-//    char *funcName;
-//
-//    unsigned long funcHash;
-//};
-
-
 ZEND_BEGIN_MODULE_GLOBALS(PulseFlow)
-    UT_string *traceData;
+    zend_bool enabled;  //1
+    char *disable_trace_functions; //8
+    char *disable_trace_class; //8
+    char *svipc_name; //8
+    unsigned int svipc_gj_id;   //4
 
-    char traceStr[256*1024];
+    unsigned int traceStrPointer;  //4
+    struct message my_message;
 
-    unsigned long classDisableHashList[200];
+    unsigned long classDisableHashList[CLASS_DISABLED_HASH_LIST_SIZE]; //8*n
+    unsigned long FuncDisableHashList[FUNC_DISABLED_HASH_LIST_SIZE];  //8*n
 
-    unsigned char classDisableHashListSize;
+    unsigned int FuncDisableHashListSize; //4
+    unsigned int classDisableHashListSize; //4
 
-    unsigned long FuncDisableHashList[200];
-
-    unsigned char FuncDisableHashListSize;
-
-    unsigned int traceStrPointer;
-
-    zend_bool enabled;
-    zend_bool debug;
-
-    char *encode_type;
-
-    char *send_type;
-    char *posix_name;
-
-    char *svipc_name;
-    long   svipc_gj_id;
-
-    char *disable_trace_functions;
-   // HashTable *disable_trace_functions_hash;
-
-    char *disable_trace_class;
-  //  HashTable *disable_trace_class_hash;
-
-//    Class_Trace_Data *Class_Trace_List;
-//    int Class_Trace_Current_Size;
-//    int Class_Trace_Total_Size;
-//
-//    Func_Trace_Data *Func_Trace_List;
-//    int Func_Trace_Current_Size;
-//    int Func_Trace_Total_Size;
 ZEND_END_MODULE_GLOBALS(PulseFlow)
 
 
