@@ -161,7 +161,7 @@ Simple_Trace_Performance_End(struct timeval *CpuTimeStart, size_t *useMemoryStar
 
     struct timeval endTime;
 
-    gettimeofday(&endTime,0);
+    gettimeofday(&endTime, 0);
 
     PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].refcount++;
 
@@ -824,14 +824,17 @@ Simple_Trace_Performance_End(struct timeval *CpuTimeStart, size_t *useMemoryStar
 //}
 
 static zend_always_inline int
-getFuncArrayId(zend_string *funcName, zend_string *className, unsigned long funcNameHash) {
+getFuncArrayId(zend_string *funcName, zend_string *className, unsigned long funcNameHash, unsigned long classNameHash) {
     unsigned int FuncListSize = PULSEFLOW_G(Function_Prof_List_current_Size);
 
     int funcArrayId = -1;
     for (int i = 0; i < FuncListSize; ++i) {
-        if (PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].funcNameHash == funcNameHash) {
+        if (PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].funcNameHash == funcNameHash &&
+            PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].classNameHash == classNameHash) {
+
             funcArrayId = i;
             return funcArrayId;
+
         }
     }
 
@@ -840,13 +843,15 @@ getFuncArrayId(zend_string *funcName, zend_string *className, unsigned long func
     if (funcArrayId == -1 && funcCurrentPointer < FUNCTION_PROF_LIST_SIZE) {
         //没有找到 创建新的
         PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcCurrentPointer].funcNameHash = funcNameHash;
+        PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcCurrentPointer].classNameHash = classNameHash;
 
         strncpy(PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcCurrentPointer].functionName, funcName->val,
-               FUNC_NAME_MAX_SIZE);
+                FUNC_NAME_MAX_SIZE);
 
         strncpy(PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcCurrentPointer].className, className->val,
-               CLASS_NAME_MAX_SIZE);
+                CLASS_NAME_MAX_SIZE);
 
+        PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcCurrentPointer].refcount = 0;
         funcArrayId = funcCurrentPointer;
         PULSEFLOW_G(Function_Prof_List_current_Size)++;
 

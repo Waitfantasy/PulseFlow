@@ -45,6 +45,7 @@ typedef struct Function_Prof_Struct {
     unsigned int cpuTimeUse;
     unsigned int refcount;
     unsigned long funcNameHash;
+    unsigned long classNameHash;
 } Function_Prof_Data ;
 
 typedef struct SVIPC_Func_Struct {

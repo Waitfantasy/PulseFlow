@@ -127,7 +127,7 @@ ZEND_DLEXPORT void PulseFlow_xhprof_execute_ex(zend_execute_data *execute_data) 
 
         } else {
 
-            int funcArrayPointer = getFuncArrayId(funcName, className, funcNameHash);
+            int funcArrayPointer = getFuncArrayId(funcName, className, funcNameHash,classNameHash);
 
             if (funcArrayPointer != -1){
                 struct timeval CpuTimeStart;
@@ -170,6 +170,7 @@ PHP_RINIT_FUNCTION (PulseFlow) {
 
 PHP_RSHUTDOWN_FUNCTION (PulseFlow) {
 
+   // printf("%d\n",PULSEFLOW_G(Function_Prof_List_current_Size));
     if (PULSEFLOW_G(Function_Prof_List_current_Size)) {
         SendDataToSVIPC(TSRMLS_C);
     }
