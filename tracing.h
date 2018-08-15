@@ -841,10 +841,10 @@ getFuncArrayId(zend_string *funcName, zend_string *className, unsigned long func
         //没有找到 创建新的
         PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcCurrentPointer].funcNameHash = funcNameHash;
 
-        memcpy(PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcCurrentPointer].functionName, funcName->val,
+        strncpy(PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcCurrentPointer].functionName, funcName->val,
                FUNC_NAME_MAX_SIZE);
 
-        memcpy(PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcCurrentPointer].className, className->val,
+        strncpy(PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcCurrentPointer].className, className->val,
                CLASS_NAME_MAX_SIZE);
 
         funcArrayId = funcCurrentPointer;
