@@ -5,68 +5,68 @@
 //#include <mqueue.h>
 #include <zend_exceptions.h>
 #include "string_hash.h"
-#include <stdbool.h>
+//#include <stdbool.h>
 
 ZEND_DECLARE_MODULE_GLOBALS(PulseFlow)
 
-static zend_always_inline zend_string *tracing_get_class_name(zend_execute_data *data TSRMLS_DC) {
+//static zend_always_inline zend_string *tracing_get_class_name(zend_execute_data *data TSRMLS_DC) {
+//
+//    if (!data) {
+//
+//        return NULL;
+//
+//    }
+//
+//
+//    if (data->func->common.scope != NULL) {
+//
+//        return data->func->common.scope->name;
+//
+//    }
+//
+//    return NULL;
+//}
 
-    if (!data) {
+//
+//static zend_always_inline zend_string *tracing_get_function_name(zend_execute_data *data TSRMLS_DC) {
+//
+//    if (!data) {
+//
+//        return NULL;
+//
+//    }
+//
+//    if (!data->func->common.function_name) {
+//
+//        return NULL;
+//
+//    }
+//
+//    return data->func->common.function_name;
+//
+//}
 
-        return NULL;
+//static zend_always_inline float timedifference_msec(struct timeval *t0, struct timeval *t1 TSRMLS_DC) {
+//
+//    return ((*t1).tv_sec - (*t0).tv_sec) * 1000.0f + ((*t1).tv_usec - (*t0).tv_usec) / 1000.0f;
+//
+//}
 
-    }
+//static zend_always_inline void getlinuxTime(struct timeval *t TSRMLS_DC) {
+//
+//    gettimeofday(t TSRMLS_CC, 0);
+//
+//}
 
-
-    if (data->func->common.scope != NULL) {
-
-        return data->func->common.scope->name;
-
-    }
-
-    return NULL;
-}
-
-
-static zend_always_inline zend_string *tracing_get_function_name(zend_execute_data *data TSRMLS_DC) {
-
-    if (!data) {
-
-        return NULL;
-
-    }
-
-    if (!data->func->common.function_name) {
-
-        return NULL;
-
-    }
-
-    return data->func->common.function_name;
-
-}
-
-static zend_always_inline float timedifference_msec(struct timeval *t0, struct timeval *t1 TSRMLS_DC) {
-
-    return ((*t1).tv_sec - (*t0).tv_sec) * 1000.0f + ((*t1).tv_usec - (*t0).tv_usec) / 1000.0f;
-
-}
-
-static zend_always_inline void getlinuxTime(struct timeval *t TSRMLS_DC) {
-
-    gettimeofday(t TSRMLS_CC, 0);
-
-}
-
-static zend_always_inline float getLinuxTimeUse(struct timeval *begin TSRMLS_DC) {
-
-    struct timeval end;
-
-    getlinuxTime(&end TSRMLS_CC);
-
-    return timedifference_msec(begin, &end TSRMLS_CC);
-
-}
+//static zend_always_inline float getLinuxTimeUse(struct timeval *begin TSRMLS_DC) {
+//
+//    struct timeval end;
+//
+//    getlinuxTime(&end TSRMLS_CC);
+//
+//    return timedifference_msec(begin, &end TSRMLS_CC);
+//
+//}
 
 static zend_always_inline void Init_Class_Disable_Hash_List() {
     int i = 0;
@@ -81,7 +81,7 @@ static zend_always_inline void Init_Class_Disable_Hash_List() {
 
             if (i < CLASS_DISABLED_HASH_LIST_SIZE) {  //此处需要修改为宏定义
                 PULSEFLOW_G(classDisableHashList)[i] = strhash;
-            }else{
+            } else {
                 break;
             }
 
@@ -113,7 +113,7 @@ static zend_always_inline void Init_Func_Disable_Hash_List() {
 
                 PULSEFLOW_G(FuncDisableHashList)[i] = strhash;
 
-            }else{
+            } else {
                 break;
             }
 
@@ -129,20 +129,14 @@ static zend_always_inline void Init_Func_Disable_Hash_List() {
 }
 
 
-static zend_always_inline int Exist_In_Hash_List(unsigned long strhash, unsigned long *hashList , int hashListLen){  //1:存在 0：不存在
-//    int strlength = strlen(str);
-//
-//    if(strlength == 0 ){
-//        return 0;
-//    }
-//
-//    unsigned long strhash = BKDRHash(str,strlength);
+static zend_always_inline int
+Exist_In_Hash_List(unsigned long strhash, unsigned long *hashList, int hashListLen) {  //1:存在 0：不存在
 
-    int i=0;
+    int i = 0;
 
-    for(i = 0 ; i < hashListLen ; i++){
+    for (i = 0; i < hashListLen; i++) {
 
-        if(hashList[i] == strhash){
+        if (hashList[i] == strhash) {
             return 1;
         }
 
@@ -161,19 +155,22 @@ Simple_Trace_Performance_Begin(struct timeval *CpuTimeStart, size_t *useMemorySt
 }
 
 static zend_always_inline void
-Simple_Trace_Performance_End(struct timeval *CpuTimeStart, size_t *useMemoryStart, unsigned int *useCpuTime, size_t *useMemory
-                             TSRMLS_DC) {
+Simple_Trace_Performance_End(struct timeval *CpuTimeStart, size_t *useMemoryStart,/* unsigned int *useCpuTime,
+                             size_t *useMemory, */
+                             unsigned char funcArrayPointer TSRMLS_DC) {
 
-    //*useCpuTime = (getLinuxTimeUse(CpuTimeStart TSRMLS_CC));
     struct timeval endTime;
 
-    getlinuxTime(&endTime TSRMLS_CC);
+    gettimeofday(&endTime,0);
 
-   // *useCpuTime = timedifference_msec(CpuTimeStart, &endTime TSRMLS_CC);
+    PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].refcount++;
 
-    *useCpuTime = ((endTime).tv_sec - (*CpuTimeStart).tv_sec) * 1000 + ((endTime).tv_usec - (*CpuTimeStart).tv_usec) / 1000;
+    PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].cpuTimeUse +=
+            ((endTime).tv_sec - (*CpuTimeStart).tv_sec) * 1000 + ((endTime).tv_usec - (*CpuTimeStart).tv_usec) / 1000;
 
-    *useMemory = (zend_memory_usage(0 TSRMLS_CC) - (*useMemoryStart));
+    PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].memoryUse += (zend_memory_usage(0 TSRMLS_CC) -
+                                                                                   (*useMemoryStart));
+
 }
 
 //static zend_always_inline int SendDataToSVIPC(TSRMLS_D) {
@@ -767,86 +764,88 @@ Simple_Trace_Performance_End(struct timeval *CpuTimeStart, size_t *useMemoryStar
 //    }
 //}
 
-char *fast_strstr(const char *haystack, const char *needle)
-{
-    if (!*needle) // Empty needle.
-        return (char *) haystack;
+//char *fast_strstr(const char *haystack, const char *needle) {
+//    if (!*needle) // Empty needle.
+//        return (char *) haystack;
+//
+//    const char needle_first = *needle;
+//
+//    // Runs strchr() on the first section of the haystack as it has a lower
+//    // algorithmic complexity for discarding the first non-matching characters.
+//    haystack = strchr(haystack, needle_first);
+//    if (!haystack) // First character of needle is not in the haystack.
+//        return NULL;
+//
+//    // First characters of haystack and needle are the same now. Both are
+//    // guaranteed to be at least one character long.
+//    // Now computes the sum of the first needle_len characters of haystack
+//    // minus the sum of characters values of needle.
+//
+//    const char *i_haystack = haystack + 1
+//    , *i_needle = needle + 1;
+//
+//    unsigned int sums_diff = *haystack;
+//    bool identical = true;
+//
+//    while (*i_haystack && *i_needle) {
+//        sums_diff += *i_haystack;
+//        sums_diff -= *i_needle;
+//        identical &= *i_haystack++ == *i_needle++;
+//    }
+//
+//    // i_haystack now references the (needle_len + 1)-th character.
+//
+//    if (*i_needle) // haystack is smaller than needle.
+//        return NULL;
+//    else if (identical)
+//        return (char *) haystack;
+//
+//    size_t needle_len = i_needle - needle;
+//    size_t needle_len_1 = needle_len - 1;
+//
+//    // Loops for the remaining of the haystack, updating the sum iteratively.
+//    const char *sub_start;
+//    for (sub_start = haystack; *i_haystack; i_haystack++) {
+//        sums_diff -= *sub_start++;
+//        sums_diff += *i_haystack;
+//
+//        // Since the sum of the characters is already known to be equal at that
+//        // point, it is enough to check just needle_len-1 characters for
+//        // equality.
+//        if (
+//                sums_diff == 0
+//                && needle_first == *sub_start // Avoids some calls to memcmp.
+//                && memcmp(sub_start, needle, needle_len_1) == 0
+//                )
+//            return (char *) sub_start;
+//    }
+//
+//    return NULL;
+//}
 
-    const char    needle_first  = *needle;
-
-    // Runs strchr() on the first section of the haystack as it has a lower
-    // algorithmic complexity for discarding the first non-matching characters.
-    haystack = strchr(haystack, needle_first);
-    if (!haystack) // First character of needle is not in the haystack.
-        return NULL;
-
-    // First characters of haystack and needle are the same now. Both are
-    // guaranteed to be at least one character long.
-    // Now computes the sum of the first needle_len characters of haystack
-    // minus the sum of characters values of needle.
-
-    const char   *i_haystack    = haystack + 1
-    ,   *i_needle      = needle   + 1;
-
-    unsigned int  sums_diff     = *haystack;
-    bool          identical     = true;
-
-    while (*i_haystack && *i_needle) {
-        sums_diff += *i_haystack;
-        sums_diff -= *i_needle;
-        identical &= *i_haystack++ == *i_needle++;
-    }
-
-    // i_haystack now references the (needle_len + 1)-th character.
-
-    if (*i_needle) // haystack is smaller than needle.
-        return NULL;
-    else if (identical)
-        return (char *) haystack;
-
-    size_t        needle_len    = i_needle - needle;
-    size_t        needle_len_1  = needle_len - 1;
-
-    // Loops for the remaining of the haystack, updating the sum iteratively.
-    const char   *sub_start;
-    for (sub_start = haystack; *i_haystack; i_haystack++) {
-        sums_diff -= *sub_start++;
-        sums_diff += *i_haystack;
-
-        // Since the sum of the characters is already known to be equal at that
-        // point, it is enough to check just needle_len-1 characters for
-        // equality.
-        if (
-                sums_diff == 0
-                && needle_first == *sub_start // Avoids some calls to memcmp.
-                && memcmp(sub_start, needle, needle_len_1) == 0
-                )
-            return (char *) sub_start;
-    }
-
-    return NULL;
-}
-
-static zend_always_inline int getFuncArrayId(zend_string *funcName , zend_string *className, unsigned long funcNameHash){
+static zend_always_inline int
+getFuncArrayId(zend_string *funcName, zend_string *className, unsigned long funcNameHash) {
     unsigned int FuncListSize = PULSEFLOW_G(Function_Prof_List_current_Size);
 
     int funcArrayId = -1;
     for (int i = 0; i < FuncListSize; ++i) {
-        if(PULSEFLOW_G(Function_Prof_List)[i].funcNameHash == funcNameHash){
+        if (PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].funcNameHash == funcNameHash) {
             funcArrayId = i;
             return funcArrayId;
         }
     }
 
-    unsigned int funcCurrentPointer = PULSEFLOW_G(Function_Prof_List_current_Size) ;
+    unsigned int funcCurrentPointer = PULSEFLOW_G(Function_Prof_List_current_Size);
 
-    if (funcArrayId == -1 &&  funcCurrentPointer< FUNCTION_PROF_LIST_SIZE){
+    if (funcArrayId == -1 && funcCurrentPointer < FUNCTION_PROF_LIST_SIZE) {
         //没有找到 创建新的
-        PULSEFLOW_G(Function_Prof_List)[funcCurrentPointer].funcNameHash = funcNameHash;
+        PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcCurrentPointer].funcNameHash = funcNameHash;
 
-        memcpy(PULSEFLOW_G(Function_Prof_List)[funcCurrentPointer].functionName,funcName->val,FUNC_NAME_MAX_SIZE);
+        memcpy(PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcCurrentPointer].functionName, funcName->val,
+               FUNC_NAME_MAX_SIZE);
 
-        memcpy(PULSEFLOW_G(Function_Prof_List)[funcCurrentPointer].className,className->val,CLASS_NAME_MAX_SIZE);
+        memcpy(PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcCurrentPointer].className, className->val,
+               CLASS_NAME_MAX_SIZE);
 
         funcArrayId = funcCurrentPointer;
         PULSEFLOW_G(Function_Prof_List_current_Size)++;
@@ -856,4 +855,27 @@ static zend_always_inline int getFuncArrayId(zend_string *funcName , zend_string
 
     return funcArrayId;
 
+}
+
+static zend_always_inline int SendDataToSVIPC(TSRMLS_D) {
+
+    key_t server_queue_key, server_qid;
+
+    int ret = 1;
+
+    if ((server_queue_key = ftok(PULSEFLOW_G(svipc_name), PULSEFLOW_G(svipc_gj_id))) != -1) {
+        if ((server_qid = msgget(server_queue_key, 0)) != -1) {
+            PULSEFLOW_G(Func_Prof_Data).message_type = 1;
+            PULSEFLOW_G(Func_Prof_Data).size = PULSEFLOW_G(Function_Prof_List_current_Size);
+            msgsnd(server_qid, &PULSEFLOW_G(Func_Prof_Data),
+                   sizeof(Function_Prof_Data) * PULSEFLOW_G(Function_Prof_List_current_Size), IPC_NOWAIT);
+        } else {
+            ret = 0;
+        }
+
+    } else {
+        ret = 0;
+    }
+
+    return ret;
 }
