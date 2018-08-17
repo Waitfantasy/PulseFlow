@@ -78,6 +78,7 @@ ZEND_DLEXPORT void PulseFlow_xhprof_execute_ex(zend_execute_data *execute_data);
 
 PHP_MINIT_FUNCTION (PulseFlow) {
     REGISTER_INI_ENTRIES();
+
     Init_Class_Disable_Hash_List();
     Init_Func_Disable_Hash_List();
 
@@ -85,6 +86,7 @@ PHP_MINIT_FUNCTION (PulseFlow) {
 
     _zend_execute_ex = zend_execute_ex;
     zend_execute_ex = PulseFlow_xhprof_execute_ex;
+
     return SUCCESS;
 }
 
@@ -127,24 +129,22 @@ ZEND_DLEXPORT void PulseFlow_xhprof_execute_ex(zend_execute_data *execute_data) 
 
         } else {
 
-            int funcArrayPointer = getFuncArrayId(funcName, className, funcNameHash,classNameHash);
-
-            if (funcArrayPointer != -1){
+            int funcArrayPointer = getFuncArrayId(funcName, className, funcNameHash, classNameHash);
+            if (funcArrayPointer != -1) {
                 struct timeval CpuTimeStart;
 
                 size_t useMemoryStart;
 
-                Simple_Trace_Performance_Begin(&CpuTimeStart, &useMemoryStart TSRMLS_CC);
+                Simple_Trace_Performance_Begin(&CpuTimeStart, &useMemoryStart ,funcArrayPointer TSRMLS_CC);
 
                 _zend_execute_ex(execute_data TSRMLS_CC);
 
                 Simple_Trace_Performance_End(&CpuTimeStart, &useMemoryStart, funcArrayPointer TSRMLS_CC);
-            }else{
+
+            } else {
 
                 _zend_execute_ex(execute_data TSRMLS_CC);
-
             }
-
 
         }
 
@@ -170,22 +170,26 @@ PHP_RINIT_FUNCTION (PulseFlow) {
 
 PHP_RSHUTDOWN_FUNCTION (PulseFlow) {
 
-   // printf("%d\n",PULSEFLOW_G(Function_Prof_List_current_Size));
-    if (PULSEFLOW_G(Function_Prof_List_current_Size)) {
+    if (PULSEFLOW_G(Function_Prof_List_current_Size) > 0) {
+
         SendDataToSVIPC(TSRMLS_C);
+
     }
     return SUCCESS;
 
 }
 
 static zend_always_inline int PulseFlow_info_print(const char *str) {
+
     return php_output_write(str, strlen(str));
+
 }
 
 
 PHP_MINFO_FUNCTION (PulseFlow) {
 
     php_info_print_table_start();
+
     if (PULSEFLOW_G(enabled)) {
 
         php_info_print_table_header(2, "PulseFlow support", "enabled");
@@ -195,9 +199,11 @@ PHP_MINFO_FUNCTION (PulseFlow) {
         php_info_print_table_header(2, "PulseFlow support", "disabled");
 
     }
+
     php_info_print_table_end();
 
     php_info_print_box_start(0);
+
     if (!sapi_module.phpinfo_as_text) {
 
         PulseFlow_info_print("<a href=\"https://github.com/gitsrc/PulseFlow\"><img border=0 src=\"");
