@@ -21,6 +21,7 @@
 #endif
 
 #include <zend_compile.h>
+#include <SAPI.h>
 #include "php.h"
 #include "SAPI.h"
 #include "php_ini.h"
@@ -91,7 +92,17 @@ PHP_MINIT_FUNCTION (PulseFlow) {
 }
 
 ZEND_DLEXPORT void PulseFlow_xhprof_execute_ex(zend_execute_data *execute_data) {
-
+//
+//    zend_llist_position pos;
+//    sapi_header_struct* h;
+//    h = zend_llist_get_first_ex(&SG(sapi_headers).headers, &pos);
+//    for (; h;h= (sapi_header_struct*)zend_llist_get_next_ex(&SG(sapi_headers).headers, &pos))
+//    {
+//              php_printf("SAPI! %d, %s <br/>", h->header_len, h->header);
+//    }
+//    php_printf("%s <br/>\n",SG(request_info).query_string);
+    //  php_printf("%d\n",zend_llist_count(&SG(sapi_headers).headers));
+    // php_printf("the SAPI module is %s<br/>\n", sapi_module.name);
     if (!PULSEFLOW_G(enabled)) {
 
         _zend_execute_ex(execute_data);
@@ -135,7 +146,7 @@ ZEND_DLEXPORT void PulseFlow_xhprof_execute_ex(zend_execute_data *execute_data) 
 
                 size_t useMemoryStart;
 
-                Simple_Trace_Performance_Begin(&CpuTimeStart, &useMemoryStart ,funcArrayPointer TSRMLS_CC);
+                Simple_Trace_Performance_Begin(&CpuTimeStart, &useMemoryStart, funcArrayPointer TSRMLS_CC);
 
                 _zend_execute_ex(execute_data TSRMLS_CC);
 
@@ -241,12 +252,38 @@ PHP_FUNCTION (pulseflow_disable) {
 
 }
 
+PHP_FUNCTION (pulseflow_set_options) {
+
+    HashTable *arr_hash;
+    zval **data;
+    long num_key;
+    zval *val;
+    zval *ar;
+    zend_string *key;
+
+    ZEND_PARSE_PARAMETERS_START(1, 1)
+            Z_PARAM_ZVAL(ar)
+    ZEND_PARSE_PARAMETERS_END();
+
+
+    arr_hash = Z_ARRVAL_P(ar);
+    ZEND_HASH_FOREACH_KEY_VAL(arr_hash, num_key, key, val){
+                if (Z_TYPE_P(val) == IS_STRING && key ) {
+                    php_printf("%s ==> %s \n", key->val, val->value.str->val);
+                }/* else if (Z_TYPE_P(val) == IS_LONG) {}*/
+    }ZEND_HASH_FOREACH_END();
+
+}
+
+
 
 const zend_function_entry PulseFlow_functions[] = {
 
         PHP_FE(pulseflow_enable, NULL)
 
         PHP_FE(pulseflow_disable, NULL)
+
+        PHP_FE(pulseflow_set_options, NULL)
 
         PHP_FE_END /* Must be the last line in PulseFlow_functions[] */
 

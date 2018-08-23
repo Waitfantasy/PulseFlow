@@ -18,6 +18,10 @@
 #define FUNC_NAME_MAX_SIZE 20
 #endif
 
+#ifndef OPTS_STR_MAX_SIZE
+#define OPTS_STR_MAX_SIZE 40
+#endif
+
 
 #ifndef FUNCTION_PROF_LIST_SIZE
 #define FUNCTION_PROF_LIST_SIZE 1024
