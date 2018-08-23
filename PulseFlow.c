@@ -255,7 +255,7 @@ PHP_FUNCTION (pulseflow_disable) {
 PHP_FUNCTION (pulseflow_set_options) {
 
     HashTable *arr_hash;
-    zval **data;
+    //zval **data;
     long num_key;
     zval *val;
     zval *ar;
@@ -267,14 +267,35 @@ PHP_FUNCTION (pulseflow_set_options) {
 
 
     arr_hash = Z_ARRVAL_P(ar);
-    ZEND_HASH_FOREACH_KEY_VAL(arr_hash, num_key, key, val){
-                if (Z_TYPE_P(val) == IS_STRING && key ) {
+    ZEND_HASH_FOREACH_KEY_VAL(arr_hash, num_key, key, val)
+            {
+                if (Z_TYPE_P(val) == IS_STRING && val->value.str->len && key) {
                     php_printf("%s ==> %s \n", key->val, val->value.str->val);
                 }/* else if (Z_TYPE_P(val) == IS_LONG) {}*/
-    }ZEND_HASH_FOREACH_END();
+            }
+    ZEND_HASH_FOREACH_END();
 
 }
 
+PHP_FUNCTION (pulseflow_debug_array) {
+    zval *val;
+
+    ZEND_PARSE_PARAMETERS_START(1, 1);
+            Z_PARAM_ARRAY(val);
+    ZEND_PARSE_PARAMETERS_END();
+
+    zend_string *key;
+    zval *key_val;
+    HashTable *arr_hash;
+    arr_hash = Z_ARRVAL_P(val);
+    ZEND_HASH_FOREACH_STR_KEY_VAL(arr_hash, key, key_val)
+            {
+                if (Z_TYPE_P(key_val) == IS_STRING && key && key_val) {
+                    php_printf("%s  === > %s \n", key->val, key_val->value.str->val);
+                }
+            }
+    ZEND_HASH_FOREACH_END();
+}
 
 
 const zend_function_entry PulseFlow_functions[] = {
@@ -284,6 +305,8 @@ const zend_function_entry PulseFlow_functions[] = {
         PHP_FE(pulseflow_disable, NULL)
 
         PHP_FE(pulseflow_set_options, NULL)
+
+        PHP_FE(pulseflow_debug_array, NULL)
 
         PHP_FE_END /* Must be the last line in PulseFlow_functions[] */
 
