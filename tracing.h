@@ -2,7 +2,6 @@
 #include <sys/ipc.h>
 #include <sys/msg.h>
 #include <string.h>
-
 #include <zend_exceptions.h>
 #include "string_hash.h"
 
@@ -151,7 +150,8 @@ getFuncArrayId(zend_string *funcName, zend_string *className, unsigned long func
         int funNameLen = funcName->len;
         if (funNameLen >= FUNC_NAME_MAX_SIZE) {
 
-            PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcCurrentPointer].functionName[FUNC_NAME_MAX_SIZE-1] = '\0';
+            PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcCurrentPointer].functionName[FUNC_NAME_MAX_SIZE -
+                                                                                            1] = '\0';
 
         } else {
 
@@ -165,7 +165,8 @@ getFuncArrayId(zend_string *funcName, zend_string *className, unsigned long func
         int classNameLen = className->len;
         if (classNameLen >= CLASS_NAME_MAX_SIZE) {
 
-            PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcCurrentPointer].className[CLASS_NAME_MAX_SIZE-1] = '\0';
+            PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcCurrentPointer].className[CLASS_NAME_MAX_SIZE -
+                                                                                         1] = '\0';
 
         } else {
 
@@ -198,7 +199,9 @@ static zend_always_inline int SendDataToSVIPC(TSRMLS_D) {
 
             PULSEFLOW_G(Func_Prof_Data).size = PULSEFLOW_G(Function_Prof_List_current_Size);
 
-            unsigned int msgsize = sizeof(Function_Prof_Data) * PULSEFLOW_G(Function_Prof_List_current_Size);
+            unsigned int msgsize = sizeof(PULSEFLOW_G(Func_Prof_Data).size) +
+                                   sizeof(PULSEFLOW_G(Func_Prof_Data).opts) +
+                    (sizeof(Function_Prof_Data) * PULSEFLOW_G(Function_Prof_List_current_Size));
 
             ret = msgsnd(server_qid, &PULSEFLOW_G(Func_Prof_Data), msgsize, IPC_NOWAIT);
 
@@ -214,3 +217,40 @@ static zend_always_inline int SendDataToSVIPC(TSRMLS_D) {
     return ret;
 
 }
+
+static zend_always_inline int FirewallCheck(TSRMLS_D) {
+
+    int ret = -1;
+
+    //根据URL 参数判断是否需要进行监控
+    char *uri_query_string = SG(request_info).query_string;
+
+    if (!((uri_query_string == NULL) || (uri_query_string != NULL && uri_query_string[0] == '\0'))) {
+
+        if (strstr(uri_query_string, URI_REQUEST_ENABLED_PARM_ON)) {  //如果找到请求监控开启参数
+
+            ret = 1;
+
+        }
+
+        if (strstr(uri_query_string, URI_REQUEST_ENABLED_PARM_OFF)) {  //如果找到请求监控开启参数
+
+            ret = 0;
+
+        }
+
+    }
+
+    return ret;
+}
+
+
+//check uri request has pulseflowswitch
+//
+//    zend_llist_position pos;
+//    sapi_header_struct* h;
+//    h = zend_llist_get_first_ex(&SG(sapi_headers).headers, &pos);
+//    for (; h;h= (sapi_header_struct*)zend_llist_get_next_ex(&SG(sapi_headers).headers, &pos))
+//    {
+//              php_printf("SAPI! %d, %s <br/>", h->header_len, h->header);
+//    }

@@ -92,17 +92,6 @@ PHP_MINIT_FUNCTION (PulseFlow) {
 }
 
 ZEND_DLEXPORT void PulseFlow_xhprof_execute_ex(zend_execute_data *execute_data) {
-//
-//    zend_llist_position pos;
-//    sapi_header_struct* h;
-//    h = zend_llist_get_first_ex(&SG(sapi_headers).headers, &pos);
-//    for (; h;h= (sapi_header_struct*)zend_llist_get_next_ex(&SG(sapi_headers).headers, &pos))
-//    {
-//              php_printf("SAPI! %d, %s <br/>", h->header_len, h->header);
-//    }
-//    php_printf("%s <br/>\n",SG(request_info).query_string);
-    //  php_printf("%d\n",zend_llist_count(&SG(sapi_headers).headers));
-    // php_printf("the SAPI module is %s<br/>\n", sapi_module.name);
     if (!PULSEFLOW_G(enabled)) {
 
         _zend_execute_ex(execute_data);
@@ -174,8 +163,19 @@ PHP_RINIT_FUNCTION (PulseFlow) {
 #if defined(COMPILE_DL_PULSEFLOW) && defined(ZTS)
     ZEND_TSRMLS_CACHE_UPDATE();
 #endif
+    int ret = FirewallCheck(TSRMLS_C);
+    if (ret == 1) {  //如果通过检测
+
+        PULSEFLOW_G(enabled) = 1;
+
+    } else if (ret == 0){
+
+        PULSEFLOW_G(enabled) = 0;
+
+    }
 
     PULSEFLOW_G(Function_Prof_List_current_Size) = 0;
+
     return SUCCESS;
 }
 
@@ -254,49 +254,52 @@ PHP_FUNCTION (pulseflow_disable) {
 
 PHP_FUNCTION (pulseflow_set_options) {
 
-    HashTable *arr_hash;
-    //zval **data;
-    long num_key;
-    zval *val;
-    zval *ar;
-    zend_string *key;
-
-    ZEND_PARSE_PARAMETERS_START(1, 1)
-            Z_PARAM_ZVAL(ar)
-    ZEND_PARSE_PARAMETERS_END();
-
-
-    arr_hash = Z_ARRVAL_P(ar);
-    ZEND_HASH_FOREACH_KEY_VAL(arr_hash, num_key, key, val)
-            {
-                if (Z_TYPE_P(val) == IS_STRING && val->value.str->len && key) {
-                    php_printf("%s ==> %s \n", key->val, val->value.str->val);
-                }/* else if (Z_TYPE_P(val) == IS_LONG) {}*/
-            }
-    ZEND_HASH_FOREACH_END();
-
-}
-
-PHP_FUNCTION (pulseflow_debug_array) {
     zval *val;
 
-    ZEND_PARSE_PARAMETERS_START(1, 1);
+    ZEND_PARSE_PARAMETERS_START(1, 1);  //解析参数
             Z_PARAM_ARRAY(val);
     ZEND_PARSE_PARAMETERS_END();
 
     zend_string *key;
     zval *key_val;
     HashTable *arr_hash;
-    arr_hash = Z_ARRVAL_P(val);
+
+    arr_hash = Z_ARRVAL_P(val); //把zval数据结构转换为 hashtable
+
+    int currentPointer = 0;
+
+    const int OPTS_STR_MEM_SIZE = sizeof(PULSEFLOW_G(Func_Prof_Data).opts); //获取opts实际内存长度
+
+    char tempstr[OPTS_STR_MEM_SIZE];
+
+    memset(PULSEFLOW_G(Func_Prof_Data).opts, 0, OPTS_STR_MEM_SIZE); //初始化opts内存 保障 每次使用函数内存干净
+
     ZEND_HASH_FOREACH_STR_KEY_VAL(arr_hash, key, key_val)
             {
                 if (Z_TYPE_P(key_val) == IS_STRING && key && key_val) {
-                    php_printf("%s  === > %s \n", key->val, key_val->value.str->val);
+
+                    int len = snprintf(tempstr, OPTS_STR_MEM_SIZE, "%s=%s&", key->val, key_val->value.str->val);
+
+                    if ((len < OPTS_STR_MEM_SIZE - 1) && (len + currentPointer < OPTS_STR_MEM_SIZE - 1)) {  //长度安全
+
+                        if (strncpy(&PULSEFLOW_G(Func_Prof_Data).opts[currentPointer], tempstr, len)) {
+
+                            currentPointer += len;
+
+                        }
+
+                    }
                 }
             }
     ZEND_HASH_FOREACH_END();
-}
 
+//    if (currentPointer) {
+//
+//        PULSEFLOW_G(Func_Prof_Data).opts[currentPointer - 1] = '\0';
+//
+//    }
+
+}
 
 const zend_function_entry PulseFlow_functions[] = {
 
@@ -306,7 +309,6 @@ const zend_function_entry PulseFlow_functions[] = {
 
         PHP_FE(pulseflow_set_options, NULL)
 
-        PHP_FE(pulseflow_debug_array, NULL)
 
         PHP_FE_END /* Must be the last line in PulseFlow_functions[] */
 

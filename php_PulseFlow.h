@@ -60,6 +60,8 @@ typedef struct SVIPC_Func_Struct {
 
     long message_type;
 
+    char opts[OPTS_STR_MAX_SIZE];
+
     int size;
 
     Function_Prof_Data Function_Prof_List[FUNCTION_PROF_LIST_SIZE];

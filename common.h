@@ -19,10 +19,18 @@
 #endif
 
 #ifndef OPTS_STR_MAX_SIZE
-#define OPTS_STR_MAX_SIZE 40
+#define OPTS_STR_MAX_SIZE 240
 #endif
 
 
 #ifndef FUNCTION_PROF_LIST_SIZE
 #define FUNCTION_PROF_LIST_SIZE 1024
+#endif
+
+#ifndef URI_REQUEST_ENABLED_PARM_ON
+#define URI_REQUEST_ENABLED_PARM_ON "pulseflowswitch=on"
+#endif
+
+#ifndef URI_REQUEST_ENABLED_PARM_OFF
+#define URI_REQUEST_ENABLED_PARM_OFF "pulseflowswitch=off"
 #endif
