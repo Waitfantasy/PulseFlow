@@ -76,7 +76,11 @@ ZEND_BEGIN_MODULE_GLOBALS(PulseFlow)
     char *disable_trace_class;
 
     char *svipc_name;
-    unsigned int svipc_gj_id;
+    long svipc_gj_id;
+
+    long max_package_size; //数据包体积最大值 这个指 消息队列的数据包
+
+    int func_chunk_size; //函数列表分块大小，大于这个值进行发送数据
 
     unsigned long classDisableHashList[CLASS_DISABLED_HASH_LIST_SIZE];
     unsigned long FuncDisableHashList[FUNC_DISABLED_HASH_LIST_SIZE];

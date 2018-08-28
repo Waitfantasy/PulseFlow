@@ -36,15 +36,24 @@ PHP_INI_BEGIN()
                 ("PulseFlow.enabled", "0", PHP_INI_ALL, OnUpdateBool, enabled,
                  zend_PulseFlow_globals, PulseFlow_globals)
 
-//                STD_PHP_INI_ENTRY
-//                ("PulseFlow.debug", "0", PHP_INI_ALL, OnUpdateBool, debug,
-//                 zend_PulseFlow_globals, PulseFlow_globals)
                 STD_PHP_INI_ENTRY
                 ("PulseFlow.disable_trace_functions", "", PHP_INI_ALL, OnUpdateString, disable_trace_functions,
                  zend_PulseFlow_globals, PulseFlow_globals)
 
                 STD_PHP_INI_ENTRY
                 ("PulseFlow.disable_trace_class", "", PHP_INI_ALL, OnUpdateString, disable_trace_class,
+                 zend_PulseFlow_globals, PulseFlow_globals)
+
+                STD_PHP_INI_ENTRY
+                ("PulseFlow.svipc_name", "/dev/shm/PulseFlow_sv_ipc", PHP_INI_ALL, OnUpdateString, svipc_name,
+                 zend_PulseFlow_globals, PulseFlow_globals)
+
+                STD_PHP_INI_ENTRY
+                ("PulseFlow.svipc_pj_id", "1000", PHP_INI_ALL, OnUpdateLong, svipc_gj_id,
+                 zend_PulseFlow_globals, PulseFlow_globals)
+
+                STD_PHP_INI_ENTRY
+                ("PulseFlow.max_package_size", "0", PHP_INI_ALL, OnUpdateLong, max_package_size,
                  zend_PulseFlow_globals, PulseFlow_globals)
 
 //                STD_PHP_INI_ENTRY
@@ -59,13 +68,9 @@ PHP_INI_BEGIN()
 //                ("PulseFlow.posix_name", "/PulseFlow_posix_ipc", PHP_INI_ALL, OnUpdateString, posix_name,
 //                 zend_PulseFlow_globals, PulseFlow_globals)
 
-                STD_PHP_INI_ENTRY
-                ("PulseFlow.svipc_name", "/dev/shm/PulseFlow_sv_ipc", PHP_INI_ALL, OnUpdateString, svipc_name,
-                 zend_PulseFlow_globals, PulseFlow_globals)
-
-                STD_PHP_INI_ENTRY
-                ("PulseFlow.svipc_pj_id", "1000", PHP_INI_ALL, OnUpdateLong, svipc_gj_id,
-                 zend_PulseFlow_globals, PulseFlow_globals)
+//                STD_PHP_INI_ENTRY
+//                ("PulseFlow.debug", "0", PHP_INI_ALL, OnUpdateBool, debug,
+//                 zend_PulseFlow_globals, PulseFlow_globals)
 
 PHP_INI_END()
 
@@ -84,6 +89,28 @@ PHP_MINIT_FUNCTION (PulseFlow) {
     Init_Func_Disable_Hash_List();
 
     memset(&PULSEFLOW_G(Func_Prof_Data), 0, sizeof(SVIPC_Func_Prof_Message));
+
+    //模拟分块发送开始：根据参数进行数据分块，因为修改消息队列大小 对于不同系统可能需要重启操作，所以可以进行模拟分块发送
+    //如果消息队列分块大小值 大于 SVIPC_Func_Prof_Message 体积大小，则禁止分块，设置为0
+    PULSEFLOW_G(max_package_size) =
+            PULSEFLOW_G(max_package_size) > sizeof(SVIPC_Func_Prof_Message) ? 0 : PULSEFLOW_G(max_package_size);
+
+    //获取还有多少空间可以分配函数
+    int funcBlockSize = PULSEFLOW_G(max_package_size) -
+                        (sizeof(PULSEFLOW_G(Func_Prof_Data)) - sizeof(PULSEFLOW_G(Func_Prof_Data).Function_Prof_List));
+
+    if (funcBlockSize > 0) {
+
+        //设置可用的函数分块大小
+        PULSEFLOW_G(func_chunk_size) = funcBlockSize / sizeof(Function_Prof_Data);
+
+    } else {
+
+        PULSEFLOW_G(func_chunk_size) = 0; //没有可用空间进行函数分块 设置为0 禁止分块
+
+    }
+
+    //模拟分块发送结束
 
     _zend_execute_ex = zend_execute_ex;
     zend_execute_ex = PulseFlow_xhprof_execute_ex;
@@ -129,6 +156,18 @@ ZEND_DLEXPORT void PulseFlow_xhprof_execute_ex(zend_execute_data *execute_data) 
 
         } else {
 
+            int currentFuncSize = PULSEFLOW_G(Function_Prof_List_current_Size);
+
+            int func_chunk_size = PULSEFLOW_G(func_chunk_size);
+            //如果模拟分块大小大于0，并且 当前函数总量大于分块大小
+            if (func_chunk_size && (currentFuncSize >= func_chunk_size)) {
+
+                SendDataToSVIPC(TSRMLS_C);
+                //发送状态不进行监控 如果发送失败也丢弃
+                PULSEFLOW_G(Function_Prof_List_current_Size) = 0;
+
+            }
+
             int funcArrayPointer = getFuncArrayId(funcName, className, funcNameHash, classNameHash);
             if (funcArrayPointer != -1) {
                 struct timeval CpuTimeStart;
@@ -168,7 +207,7 @@ PHP_RINIT_FUNCTION (PulseFlow) {
 
         PULSEFLOW_G(enabled) = 1;
 
-    } else if (ret == 0){
+    } else if (ret == 0) {
 
         PULSEFLOW_G(enabled) = 0;
 
