@@ -45,7 +45,7 @@ PHP_INI_BEGIN()
                  zend_PulseFlow_globals, PulseFlow_globals)
 
                 STD_PHP_INI_ENTRY
-                ("PulseFlow.svipc_name", "/dev/shm/PulseFlow_sv_ipc", PHP_INI_ALL, OnUpdateString, svipc_name,
+                ("PulseFlow.svipc_name", "/PulseFlow_sv_ipc", PHP_INI_ALL, OnUpdateString, svipc_name,
                  zend_PulseFlow_globals, PulseFlow_globals)
 
                 STD_PHP_INI_ENTRY
