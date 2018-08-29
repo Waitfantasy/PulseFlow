@@ -28,7 +28,7 @@
 #include "ext/standard/info.h"
 #include "php_PulseFlow.h"
 #include "tracing.h"
-//
+
 ZEND_DECLARE_MODULE_GLOBALS(PulseFlow)
 
 PHP_INI_BEGIN()
