@@ -77,9 +77,9 @@ PHP_MINIT_FUNCTION (PulseFlow) {
      * 根据参数进行数据分块，因为修改消息队列大小 对于不同系统可能需要重启操作，所以可以进行模拟分块发送
      *如果消息队列分块大小值 > SVIPC_Func_Prof_Message 体积大小，则参数失效，设置为0 (因为已经超过插件允许内存的最大值)
      */
-    if(PULSEFLOW_G(max_package_size) > sizeof(SVIPC_Func_Prof_Message)){
+    if (PULSEFLOW_G(max_package_size) > sizeof(SVIPC_Func_Prof_Message)) {
 
-        PULSEFLOW_G(max_package_size) = 0 ;
+        PULSEFLOW_G(max_package_size) = 0;
 
     }
 
@@ -188,10 +188,13 @@ PHP_MSHUTDOWN_FUNCTION (PulseFlow) {
 
 
 PHP_RINIT_FUNCTION (PulseFlow) {
+
 #if defined(COMPILE_DL_PULSEFLOW) && defined(ZTS)
     ZEND_TSRMLS_CACHE_UPDATE();
 #endif
-    int ret = FirewallCheck(TSRMLS_C);
+
+    int ret = checkUrlIsEnable(TSRMLS_C);
+
     if (ret == 1) {  //如果通过检测
 
         PULSEFLOW_G(enabled) = 1;

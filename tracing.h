@@ -16,8 +16,8 @@ static zend_always_inline void Init_Class_Disable_Hash_List(TSRMLS_D) {
 
     if (strlen(PULSEFLOW_G(disable_trace_class))) {
 
-        char* pSave = NULL;
-        char *blockClass = strtok_r(PULSEFLOW_G(disable_trace_class), "," ,&pSave); // strtok_r thread safe
+        char *pSave = NULL;
+        char *blockClass = strtok_r(PULSEFLOW_G(disable_trace_class), ",", &pSave); // strtok_r thread safe
 
         while (blockClass != NULL) {
 
@@ -35,7 +35,7 @@ static zend_always_inline void Init_Class_Disable_Hash_List(TSRMLS_D) {
 
             i++;
 
-            blockClass = strtok_r(NULL, "," , &pSave);
+            blockClass = strtok_r(NULL, ",", &pSave);
 
         }
     }
@@ -52,8 +52,8 @@ static zend_always_inline void Init_Func_Disable_Hash_List(TSRMLS_D) {
 
     if (strlen(PULSEFLOW_G(disable_trace_functions))) {
 
-        char* pSave = NULL;
-        char *blockfunc = strtok_r(PULSEFLOW_G(disable_trace_functions), "," , &pSave);
+        char *pSave = NULL;
+        char *blockfunc = strtok_r(PULSEFLOW_G(disable_trace_functions), ",", &pSave);
 
         while (blockfunc != NULL) {
 
@@ -69,7 +69,7 @@ static zend_always_inline void Init_Func_Disable_Hash_List(TSRMLS_D) {
 
             i++;
 
-            blockfunc = strtok_r(NULL, "," , &pSave);
+            blockfunc = strtok_r(NULL, ",", &pSave);
 
         }
     }
@@ -124,7 +124,8 @@ Simple_Trace_Performance_End(struct timeval *CpuTimeStart, size_t *useMemoryStar
 }
 
 static zend_always_inline int
-getFuncArrayId(zend_string *funcName, zend_string *className, unsigned long funcNameHash, unsigned long classNameHash TSRMLS_DC) {
+getFuncArrayId(zend_string *funcName, zend_string *className, unsigned long funcNameHash, unsigned long classNameHash
+               TSRMLS_DC) {
 
     int funcCurrentPointer = PULSEFLOW_G(Function_Prof_List_current_Size);
 
@@ -207,7 +208,7 @@ static zend_always_inline int SendDataToSVIPC(TSRMLS_D) {
 
             unsigned int msgsize = sizeof(PULSEFLOW_G(Func_Prof_Data).size) +
                                    sizeof(PULSEFLOW_G(Func_Prof_Data).opts) +
-                    (sizeof(Function_Prof_Data) * PULSEFLOW_G(Function_Prof_List_current_Size));
+                                   (sizeof(Function_Prof_Data) * PULSEFLOW_G(Function_Prof_List_current_Size));
 
             ret = msgsnd(server_qid, &PULSEFLOW_G(Func_Prof_Data), msgsize, IPC_NOWAIT);
 
@@ -224,7 +225,7 @@ static zend_always_inline int SendDataToSVIPC(TSRMLS_D) {
 
 }
 
-static zend_always_inline int FirewallCheck(TSRMLS_D) {
+static zend_always_inline int checkUrlIsEnable(TSRMLS_D) {
 
     int ret = -1;
 
