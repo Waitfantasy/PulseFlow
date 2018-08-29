@@ -7,7 +7,8 @@ set(SOURCE_FILES
         php_PulseFlow.h
         PulseFlow.c
         tracing.h
-        string_hash.h)
+        string_hash.h
+        common.h)
 
 add_executable(PulseFlow ${SOURCE_FILES})
 
