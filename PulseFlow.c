@@ -73,12 +73,17 @@ PHP_MINIT_FUNCTION (PulseFlow) {
 
     memset(&PULSEFLOW_G(Func_Prof_Data), 0, sizeof(SVIPC_Func_Prof_Message));
 
-    //模拟分块发送开始：根据参数进行数据分块，因为修改消息队列大小 对于不同系统可能需要重启操作，所以可以进行模拟分块发送
-    //如果消息队列分块大小值 大于 SVIPC_Func_Prof_Message 体积大小，则禁止分块，设置为0
-    PULSEFLOW_G(max_package_size) =
-            PULSEFLOW_G(max_package_size) > sizeof(SVIPC_Func_Prof_Message) ? 0 : PULSEFLOW_G(max_package_size);
+    /*分块发送参数初始化
+     * 根据参数进行数据分块，因为修改消息队列大小 对于不同系统可能需要重启操作，所以可以进行模拟分块发送
+     *如果消息队列分块大小值 > SVIPC_Func_Prof_Message 体积大小，则参数失效，设置为0 (因为已经超过插件允许内存的最大值)
+     */
+    if(PULSEFLOW_G(max_package_size) > sizeof(SVIPC_Func_Prof_Message)){
 
-    //获取还有多少空间可以分配函数
+        PULSEFLOW_G(max_package_size) = 0 ;
+
+    }
+
+    //获取还有多少空间可以分配函数状态信息元
     int funcBlockSize = PULSEFLOW_G(max_package_size) -
                         (sizeof(PULSEFLOW_G(Func_Prof_Data)) - sizeof(PULSEFLOW_G(Func_Prof_Data).Function_Prof_List));
 
@@ -93,8 +98,7 @@ PHP_MINIT_FUNCTION (PulseFlow) {
 
     }
 
-    //模拟分块发送结束
-
+    //handle zend execute flow
     _zend_execute_ex = zend_execute_ex;
     zend_execute_ex = PulseFlow_xhprof_execute_ex;
 
