@@ -105,10 +105,14 @@ PHP_MINIT_FUNCTION (PulseFlow) {
     return SUCCESS;
 }
 
+//每一个执行和一个return对应，这种是为了避免可能存在的不明判断条件：万事不能错失PHP代码执行
 ZEND_DLEXPORT void PulseFlow_xhprof_execute_ex(zend_execute_data *execute_data) {
+
     if (!PULSEFLOW_G(enabled)) {
 
         _zend_execute_ex(execute_data);
+
+        return;
 
     } else {
 
@@ -118,47 +122,60 @@ ZEND_DLEXPORT void PulseFlow_xhprof_execute_ex(zend_execute_data *execute_data) 
         zend_string *className = NULL, *funcName = NULL;
 
         if (execute_data->func->common.scope != NULL) {
+
             className = execute_data->func->common.scope->name;
             classNameHash = BKDRHash(className->val, className->len TSRMLS_CC);
+
         }
 
         if (execute_data->func->common.function_name) {
+
             funcName = execute_data->func->common.function_name;
             funcNameHash = BKDRHash(funcName->val, funcName->len TSRMLS_CC);
+
         }
 
         if (funcName == NULL || className == NULL || classNameHash == 0 || funcNameHash == 0) {
 
             _zend_execute_ex(execute_data TSRMLS_CC);
 
+            return;
+
         } else if (Exist_In_Hash_List(funcNameHash, PULSEFLOW_G(FuncDisableHashList),
                                       PULSEFLOW_G(FuncDisableHashListSize) TSRMLS_CC)) {
 
             _zend_execute_ex(execute_data TSRMLS_CC);
+
+            return;
 
         } else if (Exist_In_Hash_List(classNameHash, PULSEFLOW_G(classDisableHashList),
                                       PULSEFLOW_G(classDisableHashListSize) TSRMLS_CC)) {
 
             _zend_execute_ex(execute_data TSRMLS_CC);
 
+            return;
+
         } else {
 
-            int currentFuncSize = PULSEFLOW_G(Function_Prof_List_current_Size);
+            int currentFuncSize = PULSEFLOW_G(Function_Prof_List_current_Size); //current monitor functions count
 
-            int func_chunk_size = PULSEFLOW_G(func_chunk_size);
+            int func_chunk_size = PULSEFLOW_G(func_chunk_size); //func_chunck size: 0 - disable func chunk check
 
-            //如果模拟分块大小大于0，并且 当前函数总量大于分块大小 || 或者当前函数监控总量已经大于插件空间上限
+            // (如果模拟分块大小大于0(开启分块)，并且当前函数总量大于分块大小) || (当前函数监控总量已经大于扩展存储空间上限)
             if ((func_chunk_size && (currentFuncSize >= func_chunk_size)) ||
                 (currentFuncSize >= FUNCTION_PROF_LIST_SIZE)) {
 
                 SendDataToSVIPC(TSRMLS_C);
+
                 //发送状态不进行监控 如果发送失败也丢弃
                 PULSEFLOW_G(Function_Prof_List_current_Size) = 0;
 
             }
 
-            int funcArrayPointer = getFuncArrayId(funcName, className, funcNameHash, classNameHash);
+            int funcArrayPointer = getFuncArrayId(funcName, className, funcNameHash, classNameHash TSRMLS_CC);
+
             if (funcArrayPointer != -1) {
+
                 struct timeval CpuTimeStart;
 
                 size_t useMemoryStart;
@@ -169,14 +186,17 @@ ZEND_DLEXPORT void PulseFlow_xhprof_execute_ex(zend_execute_data *execute_data) 
 
                 Simple_Trace_Performance_End(&CpuTimeStart, &useMemoryStart, funcArrayPointer TSRMLS_CC);
 
-            } else {
-
-                _zend_execute_ex(execute_data TSRMLS_CC);
+                return;
             }
 
         }
 
     }
+
+    //Else State
+    _zend_execute_ex(execute_data TSRMLS_CC);
+
+    return;
 }
 
 

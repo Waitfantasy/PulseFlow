@@ -115,6 +115,7 @@ Simple_Trace_Performance_End(struct timeval *CpuTimeStart, size_t *useMemoryStar
 
     gettimeofday(&endTime, 0);
 
+    //CPU time : ms
     PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].cpuTimeUse +=
             ((endTime).tv_sec - (*CpuTimeStart).tv_sec) * 1000 + ((endTime).tv_usec - (*CpuTimeStart).tv_usec) / 1000;
 
@@ -159,7 +160,6 @@ getFuncArrayId(zend_string *funcName, zend_string *className, unsigned long func
 
             PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcCurrentPointer].functionName[FUNC_NAME_MAX_SIZE -
                                                                                             1] = '\0';
-
         } else {
 
             PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcCurrentPointer].functionName[funNameLen] = '\0';
@@ -174,7 +174,6 @@ getFuncArrayId(zend_string *funcName, zend_string *className, unsigned long func
 
             PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcCurrentPointer].className[CLASS_NAME_MAX_SIZE -
                                                                                          1] = '\0';
-
         } else {
 
             PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcCurrentPointer].className[classNameLen] = '\0';
@@ -192,6 +191,7 @@ getFuncArrayId(zend_string *funcName, zend_string *className, unsigned long func
 
 }
 
+// ret: ( -1 : function err ) ( 0 : msg send failure)
 static zend_always_inline int SendDataToSVIPC(TSRMLS_D) {
 
     key_t server_queue_key, server_qid;
