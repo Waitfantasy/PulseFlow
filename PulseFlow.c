@@ -222,7 +222,7 @@ PHP_RSHUTDOWN_FUNCTION (PulseFlow) {
 
 }
 
-static zend_always_inline int PulseFlow_info_print(const char *str) {
+static zend_always_inline int PulseFlow_info_print(const char *str TSRMLS_DC) {
 
     return php_output_write(str, strlen(str));
 
@@ -249,22 +249,23 @@ PHP_MINFO_FUNCTION (PulseFlow) {
 
     if (!sapi_module.phpinfo_as_text) {
 
-        PulseFlow_info_print("<a href=\"https://github.com/gitsrc/PulseFlow\"><img border=0 src=\"");
+        PulseFlow_info_print("<a href=\"https://github.com/gitsrc/PulseFlow\"><img border=0 src=\"" TSRMLS_CC);
 
-        PulseFlow_info_print(PulseFLow_LOGO_URI "\" alt=\"PulseFlow logo\" /></a>\n");
+        PulseFlow_info_print(PulseFLow_LOGO_URI "\" alt=\"PulseFlow logo\" /></a>\n" TSRMLS_CC);
 
     }
 
-    PulseFlow_info_print("PulseFlow is a PHP Profiler, Monitoring and Trace PHP .");
+    PulseFlow_info_print("PulseFlow is a PHP Profiler, Monitoring and Trace PHP ." TSRMLS_CC);
 
-    PulseFlow_info_print(!sapi_module.phpinfo_as_text ? "<br /><br />" : "\n\n");
+    PulseFlow_info_print(!sapi_module.phpinfo_as_text ? "<br /><br />" : "\n\n" TSRMLS_CC);
 
     PulseFlow_info_print(
-            "The 'PulseFlow' extension optimized fork of the XHProf extension from tideways_xhprof and Facebook as open-source. <br /><br />&nbsp;&nbsp;(c) Tideways GmbH 2014-2017 <br /> &nbsp;&nbsp;(c) Facebook 2009");
+            "The 'PulseFlow' extension optimized fork of the XHProf extension from tideways_xhprof and Facebook as open-source. <br /><br />&nbsp;&nbsp;(c) Tideways GmbH 2014-2017 <br /> &nbsp;&nbsp;(c) Facebook 2009"
+            TSRMLS_CC);
 
     if (!sapi_module.phpinfo_as_text) {
         PulseFlow_info_print(
-                "<br /><br /><strong>Source Code : https://github.com/gitsrc/PulseFlow  </strong>");
+                "<br /><br /><strong>Source Code : https://github.com/gitsrc/PulseFlow  </strong>" TSRMLS_CC);
 
     }
 
@@ -308,11 +309,11 @@ PHP_FUNCTION (pulseflow_set_options) {
 
     ZEND_HASH_FOREACH_STR_KEY_VAL(arr_hash, key, key_val)
             {
-                if (Z_TYPE_P(key_val) == IS_STRING && key && key_val) {
+                if (key && key_val && Z_TYPE_P(key_val) == IS_STRING) {
 
                     int len = snprintf(tempstr, OPTS_STR_MEM_SIZE, "%s=%s&", key->val, key_val->value.str->val);
 
-                    if ((len < OPTS_STR_MEM_SIZE - 1) && (len + currentPointer < OPTS_STR_MEM_SIZE - 1)) {  //长度安全
+                    if ((len < OPTS_STR_MEM_SIZE - 1) && ((len + currentPointer) < (OPTS_STR_MEM_SIZE - 1))) {  //长度安全
 
                         if (strncpy(&PULSEFLOW_G(Func_Prof_Data).opts[currentPointer], tempstr, len)) {
 
@@ -325,12 +326,6 @@ PHP_FUNCTION (pulseflow_set_options) {
             }
     ZEND_HASH_FOREACH_END();
 
-//    if (currentPointer) {
-//
-//        PULSEFLOW_G(Func_Prof_Data).opts[currentPointer - 1] = '\0';
-//
-//    }
-
 }
 
 const zend_function_entry PulseFlow_functions[] = {
@@ -340,7 +335,6 @@ const zend_function_entry PulseFlow_functions[] = {
         PHP_FE(pulseflow_disable, NULL)
 
         PHP_FE(pulseflow_set_options, NULL)
-
 
         PHP_FE_END /* Must be the last line in PulseFlow_functions[] */
 
