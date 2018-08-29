@@ -12,7 +12,7 @@
   | obtain it through the world-wide-web, please send a note to          |
   | license@php.net so we can mail you a copy immediately.               |
   +----------------------------------------------------------------------+
-  | Author:                                                              |
+  | Author: Corerman                                                     |
   +----------------------------------------------------------------------+
 */
 
@@ -24,7 +24,7 @@
 extern zend_module_entry PulseFlow_module_entry;
 #define phpext_PulseFlow_ptr &PulseFlow_module_entry
 
-#define PHP_PULSEFLOW_VERSION "0.1.1"
+#define PHP_PULSEFLOW_VERSION "1.0.0"
 
 #ifdef PHP_WIN32
 #	define PHP_PULSEFLOW_API __declspec(dllexport)
@@ -72,18 +72,18 @@ ZEND_BEGIN_MODULE_GLOBALS(PulseFlow)
 
     zend_bool enabled;
 
-    char *disable_trace_functions;
-    char *disable_trace_class;
+    char *disable_trace_functions; // No tracking : func list
+    char *disable_trace_class;  //No tracking : class name list
 
-    char *svipc_name;
-    long svipc_gj_id;
+    char *svipc_name; //system V message queue file name
+    long svipc_gj_id; //system V message project id
 
-    long max_package_size; //数据包体积最大值 这个指 消息队列的数据包
+    long max_package_size; //message queue max size : one package max size
 
-    int func_chunk_size; //函数列表分块大小，大于这个值进行发送数据
+    int func_chunk_size; // if current func list size bigger than this , then send package
 
-    unsigned long classDisableHashList[CLASS_DISABLED_HASH_LIST_SIZE];
-    unsigned long FuncDisableHashList[FUNC_DISABLED_HASH_LIST_SIZE];
+    unsigned long classDisableHashList[CLASS_DISABLED_HASH_LIST_SIZE]; //class name hash list
+    unsigned long FuncDisableHashList[FUNC_DISABLED_HASH_LIST_SIZE];  // func name hash list
 
     unsigned int FuncDisableHashListSize;
     unsigned int classDisableHashListSize;
