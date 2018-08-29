@@ -22,7 +22,7 @@
 #define OPTS_STR_MAX_SIZE 240
 #endif
 
-
+//one loop max monitor func num
 #ifndef FUNCTION_PROF_LIST_SIZE
 #define FUNCTION_PROF_LIST_SIZE 512
 #endif
