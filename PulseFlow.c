@@ -55,23 +55,6 @@ PHP_INI_BEGIN()
                 STD_PHP_INI_ENTRY
                 ("PulseFlow.max_package_size", "0", PHP_INI_ALL, OnUpdateLong, max_package_size,
                  zend_PulseFlow_globals, PulseFlow_globals)
-
-//                STD_PHP_INI_ENTRY
-//                ("PulseFlow.encode_type", "json", PHP_INI_ALL, OnUpdateString, encode_type,
-//                 zend_PulseFlow_globals, PulseFlow_globals)
-
-//                STD_PHP_INI_ENTRY
-//                ("PulseFlow.send_type", "posix", PHP_INI_ALL, OnUpdateString, send_type,
-//                 zend_PulseFlow_globals, PulseFlow_globals)
-
-//                STD_PHP_INI_ENTRY
-//                ("PulseFlow.posix_name", "/PulseFlow_posix_ipc", PHP_INI_ALL, OnUpdateString, posix_name,
-//                 zend_PulseFlow_globals, PulseFlow_globals)
-
-//                STD_PHP_INI_ENTRY
-//                ("PulseFlow.debug", "0", PHP_INI_ALL, OnUpdateBool, debug,
-//                 zend_PulseFlow_globals, PulseFlow_globals)
-
 PHP_INI_END()
 
 static void (*_zend_execute_ex)(zend_execute_data *execute_data);
@@ -85,8 +68,8 @@ ZEND_DLEXPORT void PulseFlow_xhprof_execute_ex(zend_execute_data *execute_data);
 PHP_MINIT_FUNCTION (PulseFlow) {
     REGISTER_INI_ENTRIES();
 
-    Init_Class_Disable_Hash_List();
-    Init_Func_Disable_Hash_List();
+    Init_Class_Disable_Hash_List(TSRMLS_C);
+    Init_Func_Disable_Hash_List(TSRMLS_C);
 
     memset(&PULSEFLOW_G(Func_Prof_Data), 0, sizeof(SVIPC_Func_Prof_Message));
 
@@ -132,12 +115,12 @@ ZEND_DLEXPORT void PulseFlow_xhprof_execute_ex(zend_execute_data *execute_data) 
 
         if (execute_data->func->common.scope != NULL) {
             className = execute_data->func->common.scope->name;
-            classNameHash = BKDRHash(className->val, className->len);
+            classNameHash = BKDRHash(className->val, className->len TSRMLS_CC);
         }
 
         if (execute_data->func->common.function_name) {
             funcName = execute_data->func->common.function_name;
-            funcNameHash = BKDRHash(funcName->val, funcName->len);
+            funcNameHash = BKDRHash(funcName->val, funcName->len TSRMLS_CC);
         }
 
         if (funcName == NULL || className == NULL || classNameHash == 0 || funcNameHash == 0) {
@@ -145,12 +128,12 @@ ZEND_DLEXPORT void PulseFlow_xhprof_execute_ex(zend_execute_data *execute_data) 
             _zend_execute_ex(execute_data TSRMLS_CC);
 
         } else if (Exist_In_Hash_List(funcNameHash, PULSEFLOW_G(FuncDisableHashList),
-                                      PULSEFLOW_G(FuncDisableHashListSize))) {
+                                      PULSEFLOW_G(FuncDisableHashListSize) TSRMLS_CC)) {
 
             _zend_execute_ex(execute_data TSRMLS_CC);
 
         } else if (Exist_In_Hash_List(classNameHash, PULSEFLOW_G(classDisableHashList),
-                                      PULSEFLOW_G(classDisableHashListSize))) {
+                                      PULSEFLOW_G(classDisableHashListSize) TSRMLS_CC)) {
 
             _zend_execute_ex(execute_data TSRMLS_CC);
 
@@ -159,8 +142,10 @@ ZEND_DLEXPORT void PulseFlow_xhprof_execute_ex(zend_execute_data *execute_data) 
             int currentFuncSize = PULSEFLOW_G(Function_Prof_List_current_Size);
 
             int func_chunk_size = PULSEFLOW_G(func_chunk_size);
-            //如果模拟分块大小大于0，并且 当前函数总量大于分块大小
-            if (func_chunk_size && (currentFuncSize >= func_chunk_size)) {
+
+            //如果模拟分块大小大于0，并且 当前函数总量大于分块大小 || 或者当前函数监控总量已经大于插件空间上限
+            if ((func_chunk_size && (currentFuncSize >= func_chunk_size)) ||
+                (currentFuncSize >= FUNCTION_PROF_LIST_SIZE)) {
 
                 SendDataToSVIPC(TSRMLS_C);
                 //发送状态不进行监控 如果发送失败也丢弃
@@ -225,6 +210,7 @@ PHP_RSHUTDOWN_FUNCTION (PulseFlow) {
         SendDataToSVIPC(TSRMLS_C);
 
     }
+
     return SUCCESS;
 
 }

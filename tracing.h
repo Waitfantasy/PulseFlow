@@ -8,14 +8,19 @@
 
 ZEND_DECLARE_MODULE_GLOBALS(PulseFlow)
 
-static zend_always_inline void Init_Class_Disable_Hash_List() {
+// init class name hash lists
+static zend_always_inline void Init_Class_Disable_Hash_List(TSRMLS_D) {
+
     unsigned long strhash = 0;
     int i = 0;
+
     if (strlen(PULSEFLOW_G(disable_trace_class))) {
 
-        char *blockClass = strtok(PULSEFLOW_G(disable_trace_class), ",");
+        char* pSave = NULL;
+        char *blockClass = strtok_r(PULSEFLOW_G(disable_trace_class), "," ,&pSave); // strtok_r thread safe
 
         while (blockClass != NULL) {
+
             strhash = BKDRHash(blockClass, strlen(blockClass));
 
             if (i < CLASS_DISABLED_HASH_LIST_SIZE) {
@@ -30,7 +35,7 @@ static zend_always_inline void Init_Class_Disable_Hash_List() {
 
             i++;
 
-            blockClass = strtok(NULL, ",");
+            blockClass = strtok_r(NULL, "," , &pSave);
 
         }
     }
@@ -40,14 +45,15 @@ static zend_always_inline void Init_Class_Disable_Hash_List() {
 }
 
 
-static zend_always_inline void Init_Func_Disable_Hash_List() {
+static zend_always_inline void Init_Func_Disable_Hash_List(TSRMLS_D) {
 
     unsigned long strhash = 0;
     int i = 0;
 
     if (strlen(PULSEFLOW_G(disable_trace_functions))) {
 
-        char *blockfunc = strtok(PULSEFLOW_G(disable_trace_functions), ",");
+        char* pSave = NULL;
+        char *blockfunc = strtok_r(PULSEFLOW_G(disable_trace_functions), "," , &pSave);
 
         while (blockfunc != NULL) {
 
@@ -63,7 +69,7 @@ static zend_always_inline void Init_Func_Disable_Hash_List() {
 
             i++;
 
-            blockfunc = strtok(NULL, ",");
+            blockfunc = strtok_r(NULL, "," , &pSave);
 
         }
     }
@@ -74,7 +80,7 @@ static zend_always_inline void Init_Func_Disable_Hash_List() {
 
 
 static zend_always_inline int
-Exist_In_Hash_List(unsigned long strhash, unsigned long *hashList, int hashListLen) {  //1:存在 0：不存在
+Exist_In_Hash_List(unsigned long strhash, unsigned long *hashList, int hashListLen TSRMLS_DC) {  //1:存在 0：不存在
 
     int i = 0;
 
@@ -118,7 +124,7 @@ Simple_Trace_Performance_End(struct timeval *CpuTimeStart, size_t *useMemoryStar
 }
 
 static zend_always_inline int
-getFuncArrayId(zend_string *funcName, zend_string *className, unsigned long funcNameHash, unsigned long classNameHash) {
+getFuncArrayId(zend_string *funcName, zend_string *className, unsigned long funcNameHash, unsigned long classNameHash TSRMLS_DC) {
 
     int funcCurrentPointer = PULSEFLOW_G(Function_Prof_List_current_Size);
 
