@@ -82,6 +82,10 @@ ZEND_BEGIN_MODULE_GLOBALS(PulseFlow)
 
     int func_chunk_size; // if current func list size bigger than this , then send package
 
+    char *log_dir;
+
+    int log_enable;
+
     unsigned long classDisableHashList[CLASS_DISABLED_HASH_LIST_SIZE]; //class name hash list
     unsigned long FuncDisableHashList[FUNC_DISABLED_HASH_LIST_SIZE];  // func name hash list
 

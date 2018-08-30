@@ -28,7 +28,7 @@
 #include "ext/standard/info.h"
 #include "php_PulseFlow.h"
 #include "tracing.h"
-
+#include <loger.h>
 ZEND_DECLARE_MODULE_GLOBALS(PulseFlow)
 
 PHP_INI_BEGIN()
@@ -55,6 +55,11 @@ PHP_INI_BEGIN()
                 STD_PHP_INI_ENTRY
                 ("PulseFlow.max_package_size", "0", PHP_INI_ALL, OnUpdateLong, max_package_size,
                  zend_PulseFlow_globals, PulseFlow_globals)
+
+                STD_PHP_INI_ENTRY
+                ("PulseFlow.log_dir", "", PHP_INI_ALL, OnUpdateString, log_dir,
+                 zend_PulseFlow_globals, PulseFlow_globals)
+
 PHP_INI_END()
 
 static void (*_zend_execute_ex)(zend_execute_data *execute_data);
@@ -101,6 +106,14 @@ PHP_MINIT_FUNCTION (PulseFlow) {
     //handle zend execute flow
     _zend_execute_ex = zend_execute_ex;
     zend_execute_ex = PulseFlow_xhprof_execute_ex;
+
+
+    //check is open log switch
+    PULSEFLOW_G(log_enable) = 0;
+
+    if(strlen(PULSEFLOW_G(log_dir))){
+        PULSEFLOW_G(log_enable) = 1;
+    }
 
     return SUCCESS;
 }

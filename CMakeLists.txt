@@ -8,6 +8,7 @@ set(SOURCE_FILES
         PulseFlow.c
         tracing.h
         string_hash.h
+        loger.h
         common.h)
 
 add_executable(PulseFlow ${SOURCE_FILES})

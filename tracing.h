@@ -1,10 +1,16 @@
-
 #include <sys/ipc.h>
 #include <sys/msg.h>
 #include <string.h>
 #include <zend_exceptions.h>
 #include "string_hash.h"
 
+void saveLog(int level, const char *logDir, const char *file, int line, const char *fmt, ...);
+
+#ifndef LOG_ERROR
+#define LOG_ERROR if(PULSEFLOW_G(log_enable)){ \
+    saveLog(4,PULSEFLOW_G(log_dir),__FILE__,__LINE__,"%s : %s",__FUNCTION__ , strerror(errno)); \
+    }
+#endif
 
 ZEND_DECLARE_MODULE_GLOBALS(PulseFlow)
 
@@ -127,7 +133,6 @@ Simple_Trace_Performance_End(struct timeval *CpuTimeStart, size_t *useMemoryStar
 static zend_always_inline int
 getFuncArrayId(zend_string *funcName, zend_string *className, unsigned long funcNameHash, unsigned long classNameHash
                TSRMLS_DC) {
-
     int funcCurrentPointer = PULSEFLOW_G(Function_Prof_List_current_Size);
 
     int funcArrayId = -1;
@@ -216,8 +221,18 @@ static zend_always_inline int SendDataToSVIPC(TSRMLS_D) {
 
                 ret = 0; //发送失败
 
+                LOG_ERROR
+
             }
+        }else{
+
+            LOG_ERROR
+
         }
+
+    }else{
+
+        LOG_ERROR
 
     }
 
