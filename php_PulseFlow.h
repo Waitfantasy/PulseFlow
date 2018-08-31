@@ -46,7 +46,7 @@ typedef struct Function_Prof_Struct {
 
     unsigned int memoryUse;
 
-    unsigned int cpuTimeUse;
+    int cpuTimeUse;
 
     unsigned int refcount;
 

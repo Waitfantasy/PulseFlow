@@ -4,7 +4,8 @@
 #include <zend_exceptions.h>
 #include "string_hash.h"
 
-static zend_always_inline void saveLog(int level, const char *logDir, const char *file, int line, const char *fmt, ... TSRMLS_DC);
+static zend_always_inline void
+saveLog(int level, const char *logDir, const char *file, int line, const char *fmt, ... TSRMLS_DC);
 
 #ifndef LOG_ERROR
 #define LOG_ERROR if(PULSEFLOW_G(log_enable)){ \
@@ -111,6 +112,12 @@ Simple_Trace_Performance_Begin(struct timeval *CpuTimeStart, size_t *useMemorySt
     *useMemoryStart = zend_memory_usage(0 TSRMLS_CC);
 
     PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].refcount++;
+
+    //这个判断条件很重要，否则会造成函数间循环调用BUG 初始化函数超时值
+    if (PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].cpuTimeUse == 0) {
+        PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].cpuTimeUse = FUNC_EXEC_TIME_OUT_FLAG;
+    }
+
 }
 
 static zend_always_inline void
@@ -122,8 +129,12 @@ Simple_Trace_Performance_End(struct timeval *CpuTimeStart, size_t *useMemoryStar
     gettimeofday(&endTime, 0);
 
     //CPU time : ms
+    if (PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].cpuTimeUse == FUNC_EXEC_TIME_OUT_FLAG) {
+        PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].cpuTimeUse = 0;
+    }
+
     PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].cpuTimeUse +=
-            ((endTime).tv_sec - (*CpuTimeStart).tv_sec) * 1000 + ((endTime).tv_usec - (*CpuTimeStart).tv_usec) / 1000;
+            (((endTime).tv_sec - (*CpuTimeStart).tv_sec) * 1000 + ((endTime).tv_usec - (*CpuTimeStart).tv_usec) / 1000);
 
     PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].memoryUse += (zend_memory_usage(0 TSRMLS_CC) -
                                                                                    (*useMemoryStart));
@@ -224,13 +235,13 @@ static zend_always_inline int SendDataToSVIPC(TSRMLS_D) {
                 LOG_ERROR
 
             }
-        }else{
+        } else {
 
             LOG_ERROR
 
         }
 
-    }else{
+    } else {
 
         LOG_ERROR
 

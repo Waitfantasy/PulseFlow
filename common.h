@@ -34,3 +34,7 @@
 #ifndef URI_REQUEST_ENABLED_PARM_OFF
 #define URI_REQUEST_ENABLED_PARM_OFF "pulseflowswitch=off"
 #endif
+
+#ifndef FUNC_EXEC_TIME_OUT_FLAG
+#define FUNC_EXEC_TIME_OUT_FLAG -999
+#endif
