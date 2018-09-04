@@ -4,8 +4,7 @@
 #include <zend_exceptions.h>
 #include "string_hash.h"
 
-static zend_always_inline void
-saveLog(int level, const char *logDir, const char *file, int line, const char *fmt, ... TSRMLS_DC);
+static void saveLog(int level, const char *logDir, const char *file, int line, const char *fmt, ... TSRMLS_DC);
 
 #ifndef LOG_ERROR
 #define LOG_ERROR if(PULSEFLOW_G(log_enable)){ \
