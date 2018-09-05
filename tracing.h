@@ -133,7 +133,7 @@ Simple_Trace_Performance_End(struct timeval *CpuTimeStart, size_t *useMemoryStar
     }
 
     PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].cpuTimeUse +=
-            (((endTime).tv_sec - (*CpuTimeStart).tv_sec) * 1000 + ((endTime).tv_usec - (*CpuTimeStart).tv_usec) / 1000);
+            (((endTime).tv_sec - (*CpuTimeStart).tv_sec) * 1000.0 + ((endTime).tv_usec - (*CpuTimeStart).tv_usec) / 1000.0f);
 
     PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].memoryUse += (zend_memory_usage(0 TSRMLS_CC) -
                                                                                    (*useMemoryStart));

@@ -46,7 +46,7 @@ typedef struct Function_Prof_Struct {
 
     unsigned int memoryUse;
 
-    int cpuTimeUse;
+    float cpuTimeUse;
 
     unsigned int refcount;
 
@@ -83,6 +83,12 @@ ZEND_BEGIN_MODULE_GLOBALS(PulseFlow)
     int func_chunk_size; // if current func list size bigger than this , then send package
 
     char *log_dir;
+
+    long sampling_rate; //采样率
+
+    long request_sampling_rate; //每次请求的采样随机数
+
+    int url_enable_flag; //url enable fiter switch
 
     int log_enable;
 

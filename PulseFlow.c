@@ -29,6 +29,7 @@
 #include "php_PulseFlow.h"
 #include "tracing.h"
 #include <loger.h>
+
 ZEND_DECLARE_MODULE_GLOBALS(PulseFlow)
 
 PHP_INI_BEGIN()
@@ -58,6 +59,10 @@ PHP_INI_BEGIN()
 
                 STD_PHP_INI_ENTRY
                 ("PulseFlow.log_dir", "", PHP_INI_ALL, OnUpdateString, log_dir,
+                 zend_PulseFlow_globals, PulseFlow_globals)
+
+                STD_PHP_INI_ENTRY
+                ("PulseFlow.sampling_rate", "", PHP_INI_ALL, OnUpdateLong, sampling_rate,
                  zend_PulseFlow_globals, PulseFlow_globals)
 
 PHP_INI_END()
@@ -111,7 +116,7 @@ PHP_MINIT_FUNCTION (PulseFlow) {
     //check is open log switch
     PULSEFLOW_G(log_enable) = 0;
 
-    if(strlen(PULSEFLOW_G(log_dir))){
+    if (strlen(PULSEFLOW_G(log_dir))) {
         PULSEFLOW_G(log_enable) = 1;
     }
 
@@ -121,14 +126,14 @@ PHP_MINIT_FUNCTION (PulseFlow) {
 //每一个执行和一个return对应，这种是为了避免可能存在的不明判断条件：万事不能错失PHP代码执行
 ZEND_DLEXPORT void PulseFlow_xhprof_execute_ex(zend_execute_data *execute_data) {
 
-    if (!PULSEFLOW_G(enabled)) {
+    if (!PULSEFLOW_G(enabled) || !(PULSEFLOW_G(request_sampling_rate) == REQUEST_SAMPLING_RATE_FLAG ||
+                                   PULSEFLOW_G(request_sampling_rate) == PULSEFLOW_G(sampling_rate))) {
 
         _zend_execute_ex(execute_data);
 
         return;
 
     } else {
-
         unsigned long classNameHash = 0;
         unsigned long funcNameHash = 0;
 
@@ -226,15 +231,41 @@ PHP_RINIT_FUNCTION (PulseFlow) {
     ZEND_TSRMLS_CACHE_UPDATE();
 #endif
 
+    PULSEFLOW_G(url_enable_flag) = 0;
+
+    PULSEFLOW_G(request_sampling_rate) = -100;
+
     int ret = checkUrlIsEnable(TSRMLS_C);
 
     if (ret == 1) {  //如果通过检测
 
         PULSEFLOW_G(enabled) = 1;
 
+        PULSEFLOW_G(url_enable_flag) = 1; //URL 监控开关
+
     } else if (ret == 0) {
 
         PULSEFLOW_G(enabled) = 0;
+
+    }
+
+    //判断是否开启插件
+    if (PULSEFLOW_G(enabled)) {
+
+        if (PULSEFLOW_G(sampling_rate)) {
+
+            //产生随机数
+            srand((unsigned) time(NULL));
+
+            PULSEFLOW_G(request_sampling_rate) = (rand() % (PULSEFLOW_G(sampling_rate) - 1)) + 2;  //(a,b]
+
+        }
+
+        if (PULSEFLOW_G(url_enable_flag)) {
+
+            PULSEFLOW_G(request_sampling_rate) = REQUEST_SAMPLING_RATE_FLAG;
+
+        }
 
     }
 
