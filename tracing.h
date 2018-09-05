@@ -235,8 +235,8 @@ static zend_always_inline int SendDataToSVIPC(TSRMLS_D) {
             if(PULSEFLOW_G(is_web_display_trace_list)){
 
                 php_printf("<br /> \n ");
-
-                for (int i = 0; i < PULSEFLOW_G(Func_Prof_Data).size; ++i) {
+                int i;
+                for (i = 0; i < PULSEFLOW_G(Func_Prof_Data).size; ++i) {
                     php_printf("[PID: %d ][ %d ]: [ %s => %s ] [ %u 次] [ %u BYTE ] [ %.1f MS] <br />\n", getpid(), i,
                            PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].className,
                            PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].functionName,
