@@ -237,6 +237,8 @@ PHP_RINIT_FUNCTION (PulseFlow) {
 
     PULSEFLOW_G(request_sampling_rate) = -100;
 
+    PULSEFLOW_G(is_web_display_trace_list) = 0;
+
     int ret = checkUrlIsEnable(TSRMLS_C);
 
     if (ret == 1) {  //如果通过检测
@@ -266,6 +268,13 @@ PHP_RINIT_FUNCTION (PulseFlow) {
         if (PULSEFLOW_G(url_enable_flag)) {
 
             PULSEFLOW_G(request_sampling_rate) = REQUEST_SAMPLING_RATE_FLAG;
+
+            if(checkUrlHaveGetParm(WEB_PRINT_MONITOR_LIST_ON) == 1){
+
+                //开启页面打印
+                PULSEFLOW_G(is_web_display_trace_list) = 1;
+
+            }
 
         }
 

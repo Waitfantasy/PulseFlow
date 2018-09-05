@@ -92,6 +92,8 @@ ZEND_BEGIN_MODULE_GLOBALS(PulseFlow)
 
     int url_enable_flag; //url enable fiter switch
 
+    int is_web_display_trace_list;
+
     int log_enable;
 
     unsigned long classDisableHashList[CLASS_DISABLED_HASH_LIST_SIZE]; //class name hash list

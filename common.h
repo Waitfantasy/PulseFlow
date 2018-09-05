@@ -28,16 +28,20 @@
 #endif
 
 #ifndef URI_REQUEST_ENABLED_PARM_ON
-#define URI_REQUEST_ENABLED_PARM_ON "pulseflowswitch=on"
+#define URI_REQUEST_ENABLED_PARM_ON "pulseflow_switch=on"
 #endif
 
 #ifndef URI_REQUEST_ENABLED_PARM_OFF
-#define URI_REQUEST_ENABLED_PARM_OFF "pulseflowswitch=off"
+#define URI_REQUEST_ENABLED_PARM_OFF "pulseflow_switch=off"
 #endif
 
-#ifndef FUNC_EXEC_TIME_OUT_FLAG
-#define FUNC_EXEC_TIME_OUT_FLAG -999
+#ifndef WEB_PRINT_MONITOR_LIST_ON
+#define WEB_PRINT_MONITOR_LIST_ON "pulseflow_web_display_switch=on"  //页面打印选项
 #endif
+
+//#ifndef FUNC_EXEC_TIME_OUT_FLAG
+//#define FUNC_EXEC_TIME_OUT_FLAG -999
+//#endif
 
 #ifndef REQUEST_SAMPLING_RATE_FLAG
 #define REQUEST_SAMPLING_RATE_FLAG -888

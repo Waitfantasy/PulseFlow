@@ -232,6 +232,21 @@ static zend_always_inline int SendDataToSVIPC(TSRMLS_D) {
                                    sizeof(PULSEFLOW_G(Func_Prof_Data).opts) +
                                    (sizeof(Function_Prof_Data) * PULSEFLOW_G(Function_Prof_List_current_Size));
 
+            if(PULSEFLOW_G(is_web_display_trace_list)){
+
+                php_printf("<br /> \n ");
+
+                for (int i = 0; i < PULSEFLOW_G(Func_Prof_Data).size; ++i) {
+                    php_printf("[PID: %d ][ %d ]: [ %s => %s ] [ %u 次] [ %u BYTE ] [ %.1f MS] <br />\n", getpid(), i,
+                           PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].className,
+                           PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].functionName,
+                           PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].refcount,
+                           PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].memoryUse,
+                           PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].cpuTimeUse);
+                }
+
+            }
+
             ret = msgsnd(server_qid, &PULSEFLOW_G(Func_Prof_Data), msgsize, IPC_NOWAIT);
 
             if (ret == -1) {
@@ -283,6 +298,26 @@ static zend_always_inline int checkUrlIsEnable(TSRMLS_D) {
     return ret;
 }
 
+
+static zend_always_inline int checkUrlHaveGetParm(const char* parm TSRMLS_DC) {
+
+    int ret = 0;
+
+    //根据URL 参数判断是否需要进行监控
+    char *uri_query_string = SG(request_info).query_string;
+
+    if (!((uri_query_string == NULL) || (uri_query_string != NULL && uri_query_string[0] == '\0'))) {
+
+        if (strstr(uri_query_string, parm)) {  //如果找到指定参数
+
+            ret = 1;
+
+        }
+
+    }
+
+    return ret;
+}
 
 //check uri request has pulseflowswitch
 //
