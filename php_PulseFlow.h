@@ -86,6 +86,8 @@ ZEND_BEGIN_MODULE_GLOBALS(PulseFlow)
 
     long sampling_rate; //采样率
 
+    long exec_process_err_flag; //PHP执行体 异常flag 一般设置为超时时间
+
     long request_sampling_rate; //每次请求的采样随机数
 
     int url_enable_flag; //url enable fiter switch

@@ -65,6 +65,10 @@ PHP_INI_BEGIN()
                 ("PulseFlow.sampling_rate", "10", PHP_INI_ALL, OnUpdateLong, sampling_rate,
                  zend_PulseFlow_globals, PulseFlow_globals)
 
+                STD_PHP_INI_ENTRY
+                ("PulseFlow.exec_process_err_flag", "30", PHP_INI_ALL, OnUpdateLong, exec_process_err_flag,
+                 zend_PulseFlow_globals, PulseFlow_globals)
+
 PHP_INI_END()
 
 static void (*_zend_execute_ex)(zend_execute_data *execute_data);
@@ -230,7 +234,6 @@ PHP_RINIT_FUNCTION (PulseFlow) {
 #if defined(COMPILE_DL_PULSEFLOW) && defined(ZTS)
     ZEND_TSRMLS_CACHE_UPDATE();
 #endif
-
     PULSEFLOW_G(url_enable_flag) = 0;
 
     PULSEFLOW_G(request_sampling_rate) = -100;

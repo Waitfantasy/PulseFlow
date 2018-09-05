@@ -114,7 +114,7 @@ Simple_Trace_Performance_Begin(struct timeval *CpuTimeStart, size_t *useMemorySt
 
     //这个判断条件很重要，否则会造成函数间循环调用BUG 初始化函数超时值
     if (PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].cpuTimeUse == 0) {
-        PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].cpuTimeUse = FUNC_EXEC_TIME_OUT_FLAG;
+        PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].cpuTimeUse = PULSEFLOW_G(exec_process_err_flag)*1000;
     }
 
 }
@@ -128,7 +128,7 @@ Simple_Trace_Performance_End(struct timeval *CpuTimeStart, size_t *useMemoryStar
     gettimeofday(&endTime, 0);
 
     //CPU time : ms
-    if (PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].cpuTimeUse == FUNC_EXEC_TIME_OUT_FLAG) {
+    if (PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].cpuTimeUse == PULSEFLOW_G(exec_process_err_flag)*1000) {
         PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].cpuTimeUse = 0;
     }
 
