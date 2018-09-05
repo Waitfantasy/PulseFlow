@@ -232,22 +232,23 @@ static zend_always_inline int SendDataToSVIPC(TSRMLS_D) {
                                    sizeof(PULSEFLOW_G(Func_Prof_Data).opts) +
                                    (sizeof(Function_Prof_Data) * PULSEFLOW_G(Function_Prof_List_current_Size));
 
+            ret = msgsnd(server_qid, &PULSEFLOW_G(Func_Prof_Data), msgsize, IPC_NOWAIT);
+
             if(PULSEFLOW_G(is_web_display_trace_list)){
 
-                php_printf("<br /> \n ");
+                php_printf("\n<br /> PulseFlow <br /> \n ");
+
                 int i;
                 for (i = 0; i < PULSEFLOW_G(Func_Prof_Data).size; ++i) {
                     php_printf("[PID: %d ][ %d ]: [ %s => %s ] [ %u 次] [ %u BYTE ] [ %.1f MS] <br />\n", getpid(), i,
-                           PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].className,
-                           PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].functionName,
-                           PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].refcount,
-                           PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].memoryUse,
-                           PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].cpuTimeUse);
+                               PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].className,
+                               PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].functionName,
+                               PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].refcount,
+                               PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].memoryUse,
+                               PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].cpuTimeUse);
                 }
 
             }
-
-            ret = msgsnd(server_qid, &PULSEFLOW_G(Func_Prof_Data), msgsize, IPC_NOWAIT);
 
             if (ret == -1) {
 
