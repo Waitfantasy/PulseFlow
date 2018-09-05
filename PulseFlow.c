@@ -62,7 +62,7 @@ PHP_INI_BEGIN()
                  zend_PulseFlow_globals, PulseFlow_globals)
 
                 STD_PHP_INI_ENTRY
-                ("PulseFlow.sampling_rate", "", PHP_INI_ALL, OnUpdateLong, sampling_rate,
+                ("PulseFlow.sampling_rate", "10", PHP_INI_ALL, OnUpdateLong, sampling_rate,
                  zend_PulseFlow_globals, PulseFlow_globals)
 
 PHP_INI_END()
