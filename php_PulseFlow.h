@@ -44,7 +44,7 @@ typedef struct Function_Prof_Struct {
 
     char functionName[FUNC_NAME_MAX_SIZE];
 
-    unsigned int memoryUse;
+    size_t memoryUse;
 
     float cpuTimeUse;
 

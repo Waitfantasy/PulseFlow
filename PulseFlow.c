@@ -184,7 +184,7 @@ ZEND_DLEXPORT void PulseFlow_xhprof_execute_ex(zend_execute_data *execute_data) 
             int func_chunk_size = PULSEFLOW_G(func_chunk_size); //func_chunck size: 0 - disable func chunk check
 
             // (如果模拟分块大小大于0(开启分块)，并且当前函数总量大于分块大小) || (当前函数监控总量已经大于扩展存储空间上限)
-            if ((func_chunk_size && (currentFuncSize >= func_chunk_size))/* || (currentFuncSize >= FUNCTION_PROF_LIST_SIZE)*/) {
+            if ((func_chunk_size && (currentFuncSize >= func_chunk_size)) || (currentFuncSize >= FUNCTION_PROF_LIST_SIZE)) {
 
                 SendDataToSVIPC(TSRMLS_C);
 

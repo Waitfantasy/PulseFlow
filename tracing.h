@@ -114,7 +114,8 @@ Simple_Trace_Performance_Begin(struct timeval *CpuTimeStart, size_t *useMemorySt
 
     //这个判断条件很重要，否则会造成函数间循环调用BUG 初始化函数超时值
     if (PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].cpuTimeUse == 0) {
-        PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].cpuTimeUse = PULSEFLOW_G(exec_process_err_flag)*1000;
+        PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].cpuTimeUse =
+                PULSEFLOW_G(exec_process_err_flag) * 1000;
     }
 
 }
@@ -128,7 +129,8 @@ Simple_Trace_Performance_End(struct timeval *CpuTimeStart, size_t *useMemoryStar
     gettimeofday(&endTime, 0);
 
     //CPU time : ms
-    if (PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].cpuTimeUse == PULSEFLOW_G(exec_process_err_flag)*1000) {
+    if (PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].cpuTimeUse ==
+        PULSEFLOW_G(exec_process_err_flag) * 1000) {
         PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].cpuTimeUse = 0;
     }
 
@@ -136,8 +138,11 @@ Simple_Trace_Performance_End(struct timeval *CpuTimeStart, size_t *useMemoryStar
             (((endTime).tv_sec - (*CpuTimeStart).tv_sec) * 1000.0 +
              ((endTime).tv_usec - (*CpuTimeStart).tv_usec) / 1000.0f);
 
-    PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].memoryUse += (zend_memory_usage(0 TSRMLS_CC) -
-                                                                                   (*useMemoryStart));
+    long memoryTemp = zend_memory_usage(0 TSRMLS_CC) - (*useMemoryStart);
+
+    if(memoryTemp > 0 ){
+        PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].memoryUse += memoryTemp;
+    }
 
 }
 
