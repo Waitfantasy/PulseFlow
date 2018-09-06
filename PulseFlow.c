@@ -66,7 +66,7 @@ PHP_INI_BEGIN()
                  zend_PulseFlow_globals, PulseFlow_globals)
 
                 STD_PHP_INI_ENTRY
-                ("PulseFlow.exec_process_err_flag", "30", PHP_INI_ALL, OnUpdateLong, exec_process_err_flag,
+                ("PulseFlow.exec_process_err_flag", "90", PHP_INI_ALL, OnUpdateLong, exec_process_err_flag,
                  zend_PulseFlow_globals, PulseFlow_globals)
 
 PHP_INI_END()

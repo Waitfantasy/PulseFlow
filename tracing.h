@@ -113,10 +113,10 @@ Simple_Trace_Performance_Begin(struct timeval *CpuTimeStart, size_t *useMemorySt
     PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].refcount++;
 
     //这个判断条件很重要，否则会造成函数间循环调用BUG 初始化函数超时值
-    if (PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].cpuTimeUse == 0) {
-        PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].cpuTimeUse =
+  //  if (PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].cpuTimeUse == 0) {
+        PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].cpuTimeUse +=
                 PULSEFLOW_G(exec_process_err_flag) * 1000;
-    }
+   // }
 
 }
 
@@ -129,10 +129,10 @@ Simple_Trace_Performance_End(struct timeval *CpuTimeStart, size_t *useMemoryStar
     gettimeofday(&endTime, 0);
 
     //CPU time : ms
-    if (PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].cpuTimeUse ==
-        PULSEFLOW_G(exec_process_err_flag) * 1000) {
-        PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].cpuTimeUse = 0;
-    }
+  //  if (PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].cpuTimeUse ==
+       // PULSEFLOW_G(exec_process_err_flag) * 1000) {
+        PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].cpuTimeUse -= PULSEFLOW_G(exec_process_err_flag) * 1000;
+  //  }
 
     PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].cpuTimeUse +=
             (((endTime).tv_sec - (*CpuTimeStart).tv_sec) * 1000.0 +
@@ -140,7 +140,7 @@ Simple_Trace_Performance_End(struct timeval *CpuTimeStart, size_t *useMemoryStar
 
     long memoryTemp = zend_memory_usage(0 TSRMLS_CC) - (*useMemoryStart);
 
-    if(memoryTemp > 0 ){
+    if (memoryTemp > 0) {
         PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].memoryUse += memoryTemp;
     }
 
@@ -232,17 +232,17 @@ static zend_always_inline int SendDataToSVIPC(TSRMLS_D) {
                                    sizeof(PULSEFLOW_G(Func_Prof_Data).opts) +
                                    (sizeof(Function_Prof_Data) * PULSEFLOW_G(Function_Prof_List_current_Size));
 
-            if(PULSEFLOW_G(is_web_display_trace_list)){
+            if (PULSEFLOW_G(is_web_display_trace_list)) {
 
                 php_printf("<br /> \n ");
                 int i;
                 for (i = 0; i < PULSEFLOW_G(Func_Prof_Data).size; ++i) {
-                    php_printf("[PID: %d ][ %d ]: [ %s => %s ] [ %u 次] [ %u BYTE ] [ %.1f MS] <br />\n", getpid(), i,
-                           PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].className,
-                           PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].functionName,
-                           PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].refcount,
-                           PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].memoryUse,
-                           PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].cpuTimeUse);
+                    php_printf("[ %d ]: [PID: %d ] [ %s => %s ] [ %u 次] [ %u BYTE ] [ %.1f MS] <br />\n", i, getpid(),
+                               PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].className,
+                               PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].functionName,
+                               PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].refcount,
+                               PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].memoryUse,
+                               PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].cpuTimeUse);
                 }
 
             }
@@ -299,7 +299,7 @@ static zend_always_inline int checkUrlIsEnable(TSRMLS_D) {
 }
 
 
-static zend_always_inline int checkUrlHaveGetParm(const char* parm TSRMLS_DC) {
+static zend_always_inline int checkUrlHaveGetParm(const char *parm TSRMLS_DC) {
 
     int ret = 0;
 
