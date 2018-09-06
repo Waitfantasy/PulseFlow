@@ -114,8 +114,8 @@ Simple_Trace_Performance_Begin(struct timeval *CpuTimeStart, size_t *useMemorySt
 
     //这个判断条件很重要，否则会造成函数间循环调用BUG 初始化函数超时值
     //  if (PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].cpuTimeUse == 0) {
-    PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].cpuTimeUse +=
-            PULSEFLOW_G(exec_process_err_flag) * 1000;
+   // PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].cpuTimeUse +=
+   //         PULSEFLOW_G(exec_process_err_flag) * 1000;
     // }
 
 }
@@ -131,8 +131,8 @@ Simple_Trace_Performance_End(struct timeval *CpuTimeStart, size_t *useMemoryStar
     //CPU time : ms
     //  if (PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].cpuTimeUse ==
     // PULSEFLOW_G(exec_process_err_flag) * 1000) {
-    PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].cpuTimeUse -=
-            PULSEFLOW_G(exec_process_err_flag) * 1000;
+  //  PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].cpuTimeUse -=
+   //         PULSEFLOW_G(exec_process_err_flag) * 1000;
     //  }
 
     PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].cpuTimeUse +=
@@ -229,38 +229,142 @@ static zend_always_inline int SendDataToSVIPC(TSRMLS_D) {
 
             PULSEFLOW_G(Func_Prof_Data).message_type = 1;
 
-            PULSEFLOW_G(Func_Prof_Data).size = PULSEFLOW_G(Function_Prof_List_current_Size);
+            int func_chunk_size = PULSEFLOW_G(func_chunk_size); //func_chunck size: 0 - disable func chunk check
+            int current_func_list_count = PULSEFLOW_G(Function_Prof_List_current_Size);
 
-            unsigned int msgsize = sizeof(PULSEFLOW_G(Func_Prof_Data).size) +
-                                   sizeof(PULSEFLOW_G(Func_Prof_Data).opts) +
-                                   (sizeof(Function_Prof_Data) * PULSEFLOW_G(Function_Prof_List_current_Size));
+            if (!func_chunk_size) {
+                //不进行分块发送
+                PULSEFLOW_G(Func_Prof_Data).size = current_func_list_count;
+                unsigned int msgsize = sizeof(PULSEFLOW_G(Func_Prof_Data).size) +
+                                       sizeof(PULSEFLOW_G(Func_Prof_Data).opts) +
+                                       (sizeof(Function_Prof_Data) * PULSEFLOW_G(Function_Prof_List_current_Size));
 
-            ret = msgsnd(server_qid, &PULSEFLOW_G(Func_Prof_Data), msgsize, IPC_NOWAIT);
+                ret = msgsnd(server_qid, &PULSEFLOW_G(Func_Prof_Data), msgsize, IPC_NOWAIT);
 
-            if (PULSEFLOW_G(is_web_display_trace_list)) {
 
-                php_printf("\n<br /> PulseFlow <br /> \n ");
+                if (PULSEFLOW_G(is_web_display_trace_list)) {
 
-                int i;
-                for (i = 0; i < PULSEFLOW_G(Func_Prof_Data).size; ++i) {
+                    php_printf("\n<br /> PulseFlow <br /> \n ");
 
-                    php_printf("[PID: %d ][ %d ]: [ %s => %s ] [ %u 次] [ %u BYTE ] [ %.1f MS] <br />\n", getpid(), i,
-                               PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].className,
-                               PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].functionName,
-                               PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].refcount,
-                               PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].memoryUse,
-                               PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].cpuTimeUse);
+                    int i;
+                    for (i = 0; i < PULSEFLOW_G(Func_Prof_Data).size; ++i) {
+
+                        php_printf("[PID: %d ][ %d ]: [ %s => %s ] [ %u 次] [ %u BYTE ] [ %.1f MS] <br />\n", getpid(), i,
+                                   PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].className,
+                                   PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].functionName,
+                                   PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].refcount,
+                                   PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].memoryUse,
+                                   PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].cpuTimeUse);
+                    }
+
                 }
 
+                if (ret == -1) {
+
+                    ret = 0; //发送失败
+
+                    LOG_ERROR
+
+                }
+
+            } else if (func_chunk_size > 0) {
+                //进行分块发送
+                unsigned int divListSize, modListSize;
+
+                divListSize = current_func_list_count / func_chunk_size;
+
+                modListSize = current_func_list_count % func_chunk_size;
+
+              //  php_printf("%d = %d * %d + %d", current_func_list_count, func_chunk_size, divListSize, modListSize);
+
+                int i;
+                for (i = 0; i < divListSize; i++) {
+
+                    if (i > 0) {
+                        //不是首元素 进行内存拷贝
+                        memcpy(&PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[0],
+                               &PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i * func_chunk_size],
+                               sizeof(Function_Prof_Data) * func_chunk_size);
+                    }
+
+                    PULSEFLOW_G(Func_Prof_Data).size = func_chunk_size;
+                    unsigned int msgsize = sizeof(PULSEFLOW_G(Func_Prof_Data).size) +
+                                           sizeof(PULSEFLOW_G(Func_Prof_Data).opts) +
+                                           (sizeof(Function_Prof_Data) * func_chunk_size);
+
+                    ret = msgsnd(server_qid, &PULSEFLOW_G(Func_Prof_Data), msgsize, IPC_NOWAIT);
+
+                    if (PULSEFLOW_G(is_web_display_trace_list)) {
+
+                        php_printf("\n<br /> PulseFlow <br /> \n ");
+
+                        int i;
+                        for (i = 0; i < PULSEFLOW_G(Func_Prof_Data).size; ++i) {
+
+                            php_printf("[PID: %d ][ %d ]: [ %s => %s ] [ %u 次] [ %u BYTE ] [ %.1f MS] <br />\n", getpid(), i,
+                                       PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].className,
+                                       PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].functionName,
+                                       PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].refcount,
+                                       PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].memoryUse,
+                                       PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].cpuTimeUse);
+                        }
+
+                    }
+
+                    if (ret == -1) {
+
+                        ret = 0; //发送失败
+
+                        LOG_ERROR
+
+                    }
+                }
+
+                if(modListSize > 0){
+                    //拷贝剩余元素的内存
+                    if(divListSize > 0 ){
+                        memcpy(&PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[0],
+                               &PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i * func_chunk_size],
+                               sizeof(Function_Prof_Data) * modListSize);
+                    }
+
+                    PULSEFLOW_G(Func_Prof_Data).size = modListSize;
+                    unsigned int msgsize = sizeof(PULSEFLOW_G(Func_Prof_Data).size) +
+                                           sizeof(PULSEFLOW_G(Func_Prof_Data).opts) +
+                                           (sizeof(Function_Prof_Data) * modListSize);
+
+                    ret = msgsnd(server_qid, &PULSEFLOW_G(Func_Prof_Data), msgsize, IPC_NOWAIT);
+
+                    if (PULSEFLOW_G(is_web_display_trace_list)) {
+
+                        php_printf("\n<br /> PulseFlow <br /> \n ");
+
+                        int i;
+                        for (i = 0; i < PULSEFLOW_G(Func_Prof_Data).size; ++i) {
+
+                            php_printf("[PID: %d ][ %d ]: [ %s => %s ] [ %u 次] [ %u BYTE ] [ %.1f MS] <br />\n", getpid(), i,
+                                       PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].className,
+                                       PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].functionName,
+                                       PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].refcount,
+                                       PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].memoryUse,
+                                       PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].cpuTimeUse);
+                        }
+
+                    }
+
+                    if (ret == -1) {
+
+                        ret = 0; //发送失败
+
+                        LOG_ERROR
+
+                    }
+
+                }
+
+
             }
 
-            if (ret == -1) {
-
-                ret = 0; //发送失败
-
-                LOG_ERROR
-
-            }
         } else {
 
             LOG_ERROR
