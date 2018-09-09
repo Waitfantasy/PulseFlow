@@ -28,7 +28,7 @@
 #include "ext/standard/info.h"
 #include "php_PulseFlow.h"
 #include "tracing.h"
-#include <loger.h>
+#include "loger.h"
 
 ZEND_DECLARE_MODULE_GLOBALS(PulseFlow)
 
@@ -179,9 +179,9 @@ ZEND_DLEXPORT void PulseFlow_xhprof_execute_ex(zend_execute_data *execute_data) 
 
         } else {
 
-           // int currentFuncSize = PULSEFLOW_G(Function_Prof_List_current_Size); //current monitor functions count
+            // int currentFuncSize = PULSEFLOW_G(Function_Prof_List_current_Size); //current monitor functions count
 
-         //   int func_chunk_size = PULSEFLOW_G(func_chunk_size); //func_chunck size: 0 - disable func chunk check
+            //   int func_chunk_size = PULSEFLOW_G(func_chunk_size); //func_chunck size: 0 - disable func chunk check
 
             // (如果模拟分块大小大于0(开启分块)，并且当前函数总量大于分块大小) || (当前函数监控总量已经大于扩展存储空间上限)
 //            if ((func_chunk_size && (currentFuncSize >= func_chunk_size)) || (currentFuncSize >= FUNCTION_PROF_LIST_SIZE)) {
@@ -256,20 +256,21 @@ PHP_RINIT_FUNCTION (PulseFlow) {
     //判断是否开启插件
     if (PULSEFLOW_G(enabled)) {
 
-        if (PULSEFLOW_G(sampling_rate)) {
+        if (PULSEFLOW_G(sampling_rate) > 1) {
 
             //产生随机数
             srand((unsigned) time(NULL));
 
             PULSEFLOW_G(request_sampling_rate) = (rand() % (PULSEFLOW_G(sampling_rate) - 1)) + 2;  //(a,b]
 
+
         }
 
-        if (PULSEFLOW_G(url_enable_flag)) {
+        if (PULSEFLOW_G(url_enable_flag) || PULSEFLOW_G(sampling_rate) == 1) {
 
             PULSEFLOW_G(request_sampling_rate) = REQUEST_SAMPLING_RATE_FLAG;
 
-            if(checkUrlHaveGetParm(WEB_PRINT_MONITOR_LIST_ON) == 1){
+            if (checkUrlHaveGetParm(WEB_PRINT_MONITOR_LIST_ON) == 1) {
 
                 //开启页面打印
                 PULSEFLOW_G(is_web_display_trace_list) = 1;
