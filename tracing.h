@@ -108,9 +108,9 @@ Simple_Trace_Performance_Begin(struct timeval *CpuTimeStart, size_t *useMemorySt
 
     gettimeofday(CpuTimeStart, 0 TSRMLS_CC);
 
-    *useMemoryStart = zend_memory_usage(0 TSRMLS_CC);
-
     PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].refcount++;
+
+    *useMemoryStart = zend_memory_usage(0 TSRMLS_CC);
 
     //这个判断条件很重要，否则会造成函数间循环调用BUG 初始化函数超时值
     //  if (PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].cpuTimeUse == 0) {
@@ -123,6 +123,14 @@ Simple_Trace_Performance_Begin(struct timeval *CpuTimeStart, size_t *useMemorySt
 static zend_always_inline void
 Simple_Trace_Performance_End(struct timeval *CpuTimeStart, size_t *useMemoryStart, unsigned int funcArrayPointer
                              TSRMLS_DC) {
+
+    long memoryTemp = zend_memory_usage(0 TSRMLS_CC) - (*useMemoryStart);
+
+    if (memoryTemp > 0) {
+
+        PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].memoryUse += memoryTemp;
+
+    }
 
     struct timeval endTime;
 
@@ -139,13 +147,6 @@ Simple_Trace_Performance_End(struct timeval *CpuTimeStart, size_t *useMemoryStar
             (((endTime).tv_sec - (*CpuTimeStart).tv_sec) * 1000.0f +
              ((endTime).tv_usec - (*CpuTimeStart).tv_usec) / 1000.0f);
 
-    long memoryTemp = zend_memory_usage(0 TSRMLS_CC) - (*useMemoryStart);
-
-    if (memoryTemp > 0) {
-
-        PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].memoryUse += memoryTemp;
-
-    }
 
 }
 
