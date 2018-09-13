@@ -24,7 +24,7 @@
 
 //one loop max monitor func num
 #ifndef FUNCTION_PROF_LIST_SIZE
-#define FUNCTION_PROF_LIST_SIZE 512
+#define FUNCTION_PROF_LIST_SIZE 1024
 #endif
 
 #ifndef URI_REQUEST_ENABLED_PARM_ON

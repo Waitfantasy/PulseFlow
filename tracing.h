@@ -114,8 +114,8 @@ Simple_Trace_Performance_Begin(struct timeval *CpuTimeStart, size_t *useMemorySt
 
     //这个判断条件很重要，否则会造成函数间循环调用BUG 初始化函数超时值
     //  if (PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].cpuTimeUse == 0) {
-   // PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].cpuTimeUse +=
-   //         PULSEFLOW_G(exec_process_err_flag) * 1000;
+    // PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].cpuTimeUse +=
+    //         PULSEFLOW_G(exec_process_err_flag) * 1000;
     // }
 
 }
@@ -131,12 +131,12 @@ Simple_Trace_Performance_End(struct timeval *CpuTimeStart, size_t *useMemoryStar
     //CPU time : ms
     //  if (PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].cpuTimeUse ==
     // PULSEFLOW_G(exec_process_err_flag) * 1000) {
-  //  PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].cpuTimeUse -=
-   //         PULSEFLOW_G(exec_process_err_flag) * 1000;
+    //  PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].cpuTimeUse -=
+    //         PULSEFLOW_G(exec_process_err_flag) * 1000;
     //  }
 
     PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].cpuTimeUse +=
-            (((endTime).tv_sec - (*CpuTimeStart).tv_sec) * 1000.0 +
+            (((endTime).tv_sec - (*CpuTimeStart).tv_sec) * 1000.0f +
              ((endTime).tv_usec - (*CpuTimeStart).tv_usec) / 1000.0f);
 
     long memoryTemp = zend_memory_usage(0 TSRMLS_CC) - (*useMemoryStart);
@@ -241,23 +241,22 @@ static zend_always_inline int SendDataToSVIPC(TSRMLS_D) {
 
                 ret = msgsnd(server_qid, &PULSEFLOW_G(Func_Prof_Data), msgsize, IPC_NOWAIT);
 
-
-                if (PULSEFLOW_G(is_web_display_trace_list)) {
-
-                    php_printf("\n<br /> PulseFlow <br /> \n ");
-
-                    int i;
-                    for (i = 0; i < PULSEFLOW_G(Func_Prof_Data).size; ++i) {
-
-                        php_printf("[PID: %d ][ %d ]: [ %s => %s ] [ %u 次] [ %u BYTE ] [ %.1f MS] <br />\n", getpid(), i,
-                                   PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].className,
-                                   PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].functionName,
-                                   PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].refcount,
-                                   PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].memoryUse,
-                                   PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].cpuTimeUse);
-                    }
-
-                }
+//                if (PULSEFLOW_G(is_web_display_trace_list)) {
+//
+//                    php_printf("\n<br /> PulseFlow <br /> \n ");
+//
+//                    int i;
+//                    for (i = 0; i < current_func_list_count; ++i) {
+//
+//                        php_printf("[PID: %d ][ %d ]: [ %s => %s ] [ %u 次] [ %u BYTE ] [ %.1f MS] <br />\n", getpid(), i,
+//                                   PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].className,
+//                                   PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].functionName,
+//                                   PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].refcount,
+//                                   PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].memoryUse,
+//                                   PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].cpuTimeUse);
+//                    }
+//
+//                }
 
                 if (ret == -1) {
 
@@ -275,7 +274,7 @@ static zend_always_inline int SendDataToSVIPC(TSRMLS_D) {
 
                 modListSize = current_func_list_count % func_chunk_size;
 
-              //  php_printf("%d = %d * %d + %d", current_func_list_count, func_chunk_size, divListSize, modListSize);
+                //  php_printf("%d = %d * %d + %d", current_func_list_count, func_chunk_size, divListSize, modListSize);
 
                 int i;
                 for (i = 0; i < divListSize; i++) {
@@ -294,22 +293,22 @@ static zend_always_inline int SendDataToSVIPC(TSRMLS_D) {
 
                     ret = msgsnd(server_qid, &PULSEFLOW_G(Func_Prof_Data), msgsize, IPC_NOWAIT);
 
-                    if (PULSEFLOW_G(is_web_display_trace_list)) {
-
-                        php_printf("\n<br /> PulseFlow <br /> \n ");
-
-                        int i;
-                        for (i = 0; i < PULSEFLOW_G(Func_Prof_Data).size; ++i) {
-
-                            php_printf("[PID: %d ][ %d ]: [ %s => %s ] [ %u 次] [ %u BYTE ] [ %.1f MS] <br />\n", getpid(), i,
-                                       PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].className,
-                                       PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].functionName,
-                                       PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].refcount,
-                                       PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].memoryUse,
-                                       PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].cpuTimeUse);
-                        }
-
-                    }
+//                    if (PULSEFLOW_G(is_web_display_trace_list)) {
+//
+//                        php_printf("\n<br /> PulseFlow <br /> \n ");
+//
+//                        int i;
+//                        for (i = 0; i < current_func_list_count; ++i) {
+//
+//                            php_printf("[PID: %d ][ %d ]: [ %s => %s ] [ %u 次] [ %u BYTE ] [ %.1f MS] <br />\n", getpid(), i,
+//                                       PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].className,
+//                                       PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].functionName,
+//                                       PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].refcount,
+//                                       PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].memoryUse,
+//                                       PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].cpuTimeUse);
+//                        }
+//
+//                    }
 
                     if (ret == -1) {
 
@@ -335,22 +334,22 @@ static zend_always_inline int SendDataToSVIPC(TSRMLS_D) {
 
                     ret = msgsnd(server_qid, &PULSEFLOW_G(Func_Prof_Data), msgsize, IPC_NOWAIT);
 
-                    if (PULSEFLOW_G(is_web_display_trace_list)) {
-
-                        php_printf("\n<br /> PulseFlow <br /> \n ");
-
-                        int i;
-                        for (i = 0; i < PULSEFLOW_G(Func_Prof_Data).size; ++i) {
-
-                            php_printf("[PID: %d ][ %d ]: [ %s => %s ] [ %u 次] [ %u BYTE ] [ %.1f MS] <br />\n", getpid(), i,
-                                       PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].className,
-                                       PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].functionName,
-                                       PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].refcount,
-                                       PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].memoryUse,
-                                       PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].cpuTimeUse);
-                        }
-
-                    }
+//                    if (PULSEFLOW_G(is_web_display_trace_list)) {
+//
+//                        php_printf("\n<br /> PulseFlow <br /> \n ");
+//
+//                        int i;
+//                        for (i = 0; i < current_func_list_count; ++i) {
+//
+//                            php_printf("[PID: %d ][ %d ]: [ %s => %s ] [ %u 次] [ %u BYTE ] [ %.1f MS] <br />\n", getpid(), i,
+//                                       PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].className,
+//                                       PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].functionName,
+//                                       PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].refcount,
+//                                       PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].memoryUse,
+//                                       PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].cpuTimeUse);
+//                        }
+//
+//                    }
 
                     if (ret == -1) {
 

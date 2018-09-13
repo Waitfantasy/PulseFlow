@@ -130,6 +130,8 @@ PHP_MINIT_FUNCTION (PulseFlow) {
 //每一个执行和一个return对应，这种是为了避免可能存在的不明判断条件：万事不能错失PHP代码执行
 ZEND_DLEXPORT void PulseFlow_xhprof_execute_ex(zend_execute_data *execute_data) {
 
+    zend_execute_data *real_execute_data = execute_data;
+
     if (!PULSEFLOW_G(enabled) || !(PULSEFLOW_G(request_sampling_rate) == REQUEST_SAMPLING_RATE_FLAG ||
                                    PULSEFLOW_G(request_sampling_rate) == PULSEFLOW_G(sampling_rate))) {
 
@@ -143,16 +145,16 @@ ZEND_DLEXPORT void PulseFlow_xhprof_execute_ex(zend_execute_data *execute_data) 
 
         zend_string *className = NULL, *funcName = NULL;
 
-        if (execute_data->func->common.scope != NULL) {
+        if (real_execute_data->func->common.scope != NULL) {
 
-            className = execute_data->func->common.scope->name;
+            className = real_execute_data->func->common.scope->name;
             classNameHash = BKDRHash(className->val, className->len TSRMLS_CC);
 
         }
 
-        if (execute_data->func->common.function_name) {
+        if (real_execute_data->func->common.function_name) {
 
-            funcName = execute_data->func->common.function_name;
+            funcName = real_execute_data->func->common.function_name;
             funcNameHash = BKDRHash(funcName->val, funcName->len TSRMLS_CC);
 
         }
@@ -198,7 +200,6 @@ ZEND_DLEXPORT void PulseFlow_xhprof_execute_ex(zend_execute_data *execute_data) 
             if (funcArrayPointer != -1) {
 
                 struct timeval CpuTimeStart;
-
                 size_t useMemoryStart;
 
                 Simple_Trace_Performance_Begin(&CpuTimeStart, &useMemoryStart, funcArrayPointer TSRMLS_CC);
@@ -207,6 +208,17 @@ ZEND_DLEXPORT void PulseFlow_xhprof_execute_ex(zend_execute_data *execute_data) 
 
                 Simple_Trace_Performance_End(&CpuTimeStart, &useMemoryStart, funcArrayPointer TSRMLS_CC);
 
+//                if (PULSEFLOW_G(is_web_display_trace_list)) {
+//
+//                    php_printf("[ %d ] :[PID: %d ] [ %s => %s ] [ %u 次] [ %u BYTE ] [ %.1f MS] <br />\n",
+//                               funcArrayPointer, getpid(),
+//                               PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].className,
+//                               PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].functionName,
+//                               PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].refcount,
+//                               PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].memoryUse,
+//                               PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].cpuTimeUse);
+//
+//                }
                 return;
             }
 
@@ -236,6 +248,10 @@ PHP_RINIT_FUNCTION (PulseFlow) {
     PULSEFLOW_G(url_enable_flag) = 0;
 
     PULSEFLOW_G(request_sampling_rate) = -100;
+
+    PULSEFLOW_G(is_web_display_trace_list) = 0;
+
+    PULSEFLOW_G(url_enable_flag) = 0;
 
     PULSEFLOW_G(is_web_display_trace_list) = 0;
 
@@ -291,6 +307,8 @@ PHP_RSHUTDOWN_FUNCTION (PulseFlow) {
     if (PULSEFLOW_G(Function_Prof_List_current_Size) > 0) {
 
         SendDataToSVIPC(TSRMLS_C);
+
+        memset(&PULSEFLOW_G(Func_Prof_Data), 0, sizeof(SVIPC_Func_Prof_Message));
 
     }
 
@@ -404,6 +422,25 @@ PHP_FUNCTION (pulseflow_set_options) {
 
 }
 
+PHP_FUNCTION (pulseflow_output_trace_list) {
+    if (PULSEFLOW_G(is_web_display_trace_list) && (PULSEFLOW_G(Function_Prof_List_current_Size) > 0)) {
+
+        php_printf("\n<br /> PulseFlow <br /> \n ");
+
+        int i;
+        for (i = 0; i < PULSEFLOW_G(Function_Prof_List_current_Size); ++i) {
+            php_printf("[ %d ]: [PID: %d ][ %s => %s ] [ %u 次] [ %u byte ] [ %.1f ms] <br />\n", i, getpid(),
+                       PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].className,
+                       PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].functionName,
+                       PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].refcount,
+                       PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].memoryUse,
+                       PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i].cpuTimeUse);
+        }
+
+    }
+
+}
+
 const zend_function_entry PulseFlow_functions[] = {
 
         PHP_FE(pulseflow_enable, NULL)
@@ -411,6 +448,8 @@ const zend_function_entry PulseFlow_functions[] = {
         PHP_FE(pulseflow_disable, NULL)
 
         PHP_FE(pulseflow_set_options, NULL)
+
+        PHP_FE(pulseflow_output_trace_list, NULL)
 
         PHP_FE_END /* Must be the last line in PulseFlow_functions[] */
 
