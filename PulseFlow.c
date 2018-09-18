@@ -12,7 +12,7 @@
  | obtain it through the world-wide-web, please send a note to          |
  | license@php.net so we can mail you a copy immediately.               |
  +----------------------------------------------------------------------+
- | Author:                                                              |
+ | Author:  corerman                                                    |
  +----------------------------------------------------------------------+
  */
 /* $Id$ */
@@ -277,8 +277,12 @@ PHP_RINIT_FUNCTION (PulseFlow) {
             //产生随机数
             srand((unsigned) time(NULL));
 
-            PULSEFLOW_G(request_sampling_rate) = (rand() % (PULSEFLOW_G(sampling_rate) - 1)) + 2;  //(a,b]
+            //产生范围随机数[1,max]
+            int min=1 ,max = PULSEFLOW_G(sampling_rate), req_rand = rand();
 
+            int range = max - min + 1; //保障余数个数范围
+
+            PULSEFLOW_G(request_sampling_rate) = (req_rand - (req_rand / range) * range) + min;  //(0,b]
 
         }
 
