@@ -238,7 +238,7 @@ static zend_always_inline int SendDataToSVIPC(TSRMLS_D) {
                 PULSEFLOW_G(Func_Prof_Data).size = current_func_list_count;
                 unsigned int msgsize = sizeof(PULSEFLOW_G(Func_Prof_Data).size) +
                                        sizeof(PULSEFLOW_G(Func_Prof_Data).opts) +
-                                       (sizeof(Function_Prof_Data) * PULSEFLOW_G(Function_Prof_List_current_Size));
+                                       (sizeof(Function_Prof_Data) * current_func_list_count);
 
                 ret = msgsnd(server_qid, &PULSEFLOW_G(Func_Prof_Data), msgsize, IPC_NOWAIT);
 
@@ -320,9 +320,9 @@ static zend_always_inline int SendDataToSVIPC(TSRMLS_D) {
                     }
                 }
 
-                if(modListSize > 0){
+                if (modListSize > 0) {
                     //拷贝剩余元素的内存
-                    if(divListSize > 0 ){
+                    if (divListSize > 0) {
                         memcpy(&PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[0],
                                &PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[i * func_chunk_size],
                                sizeof(Function_Prof_Data) * modListSize);
@@ -428,6 +428,32 @@ static zend_always_inline int checkUrlHaveGetParm(const char *parm TSRMLS_DC) {
     return ret;
 }
 
+static zend_always_inline int getRequestRandom(long sampling_rate ,int isUrlEnabled TSRMLS_DC) {
+
+    int ret = -1;
+
+    if (isUrlEnabled == 1 || sampling_rate == 1) {
+
+        return REQUEST_SAMPLING_RATE_FLAG;
+    }
+
+    if (PULSEFLOW_G(sampling_rate) > 1) {
+
+        //产生随机数
+        srand((unsigned) time(NULL));
+
+        //产生范围随机数[1,max]
+        int min = 1, max = PULSEFLOW_G(sampling_rate), req_rand = rand();
+
+        int range = max - min + 1; //保障余数个数范围
+
+        return (req_rand - (req_rand / range) * range) + min;  //(0,b]
+
+    }
+
+    return ret;
+
+}
 //check uri request has pulseflowswitch
 //
 //    zend_llist_position pos;

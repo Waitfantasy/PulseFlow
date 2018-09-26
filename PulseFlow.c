@@ -12,7 +12,7 @@
  | obtain it through the world-wide-web, please send a note to          |
  | license@php.net so we can mail you a copy immediately.               |
  +----------------------------------------------------------------------+
- | Author:  corerman                                                    |
+ | Author:  corerman   2018.09.26                                       |
  +----------------------------------------------------------------------+
  */
 /* $Id$ */
@@ -245,63 +245,43 @@ PHP_RINIT_FUNCTION (PulseFlow) {
 #if defined(COMPILE_DL_PULSEFLOW) && defined(ZTS)
     ZEND_TSRMLS_CACHE_UPDATE();
 #endif
-    PULSEFLOW_G(url_enable_flag) = 0;
-
-    PULSEFLOW_G(request_sampling_rate) = -100;
-
-    PULSEFLOW_G(is_web_display_trace_list) = 0;
-
-    PULSEFLOW_G(url_enable_flag) = 0;
-
-    PULSEFLOW_G(is_web_display_trace_list) = 0;
-
-    int ret = checkUrlIsEnable(TSRMLS_C);
-
-    if (ret == 1) {  //如果通过检测
-
-        PULSEFLOW_G(enabled) = 1;
-
-        PULSEFLOW_G(url_enable_flag) = 1; //URL 监控开关
-
-    } else if (ret == 0) {
-
-        PULSEFLOW_G(enabled) = 0;
-
-    }
-
-    //判断是否开启插件
-    if (PULSEFLOW_G(enabled)) {
-
-        if (PULSEFLOW_G(sampling_rate) > 1) {
-
-            //产生随机数
-            srand((unsigned) time(NULL));
-
-            //产生范围随机数[1,max]
-            int min=1 ,max = PULSEFLOW_G(sampling_rate), req_rand = rand();
-
-            int range = max - min + 1; //保障余数个数范围
-
-            PULSEFLOW_G(request_sampling_rate) = (req_rand - (req_rand / range) * range) + min;  //(0,b]
-
-        }
-
-        if (PULSEFLOW_G(url_enable_flag) || PULSEFLOW_G(sampling_rate) == 1) {
-
-            PULSEFLOW_G(request_sampling_rate) = REQUEST_SAMPLING_RATE_FLAG;
-
-            if (checkUrlHaveGetParm(WEB_PRINT_MONITOR_LIST_ON) == 1) {
-
-                //开启页面打印
-                PULSEFLOW_G(is_web_display_trace_list) = 1;
-
-            }
-
-        }
-
-    }
+    //针对每个php请求备份enabled变量值，因为用户可以在PHP脚本里调用函数进行开关控制 这种用户自定义行为会影响下次请求
+    PULSEFLOW_G(enabled_request_bak) = PULSEFLOW_G(enabled);
 
     PULSEFLOW_G(Function_Prof_List_current_Size) = 0;
+
+    PULSEFLOW_G(request_sampling_rate) = -1;
+
+    PULSEFLOW_G(is_web_display_trace_list) = 0;
+
+    PULSEFLOW_G(url_enable_flag) = checkUrlIsEnable(TSRMLS_C);
+
+    //if php.ini enabled is true
+    if (PULSEFLOW_G(enabled)) {
+
+        //Check is Url Open?
+        int isUrlEnabled = PULSEFLOW_G(url_enable_flag);
+
+        if (isUrlEnabled == 0) {
+
+            PULSEFLOW_G(enabled) = 0;
+
+        }
+    }
+
+    if (PULSEFLOW_G(enabled)) {
+
+        PULSEFLOW_G(request_sampling_rate) = getRequestRandom(PULSEFLOW_G(sampling_rate),
+                                                              PULSEFLOW_G(url_enable_flag) TSRMLS_CC);
+
+    }
+
+    if (checkUrlHaveGetParm(WEB_PRINT_MONITOR_LIST_ON) == 1) {
+
+        //开启页面打印
+        PULSEFLOW_G(is_web_display_trace_list) = 1;
+
+    }
 
     return SUCCESS;
 }
@@ -316,6 +296,7 @@ PHP_RSHUTDOWN_FUNCTION (PulseFlow) {
 
     }
 
+    PULSEFLOW_G(enabled) = PULSEFLOW_G(enabled_request_bak);
     return SUCCESS;
 
 }
@@ -374,6 +355,11 @@ PHP_MINFO_FUNCTION (PulseFlow) {
 PHP_FUNCTION (pulseflow_enable) {
 
     PULSEFLOW_G(enabled) = 1;
+
+    int isUrlEnabled = PULSEFLOW_G(url_enable_flag);
+
+    PULSEFLOW_G(request_sampling_rate) = getRequestRandom(PULSEFLOW_G(sampling_rate), isUrlEnabled TSRMLS_CC);
+
 
 }
 

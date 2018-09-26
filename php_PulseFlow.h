@@ -106,6 +106,8 @@ ZEND_BEGIN_MODULE_GLOBALS(PulseFlow)
 
     SVIPC_Func_Prof_Message Func_Prof_Data;
 
+    zend_bool enabled_request_bak;
+
 ZEND_END_MODULE_GLOBALS(PulseFlow)
 
 
