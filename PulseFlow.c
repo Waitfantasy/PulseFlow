@@ -12,7 +12,7 @@
  | obtain it through the world-wide-web, please send a note to          |
  | license@php.net so we can mail you a copy immediately.               |
  +----------------------------------------------------------------------+
- | Author:  corerman   2018.09.26                                       |
+ | Author:  corerman   2018.10.12.add_alone_function_monitor            |
  +----------------------------------------------------------------------+
  */
 /* $Id$ */
@@ -159,7 +159,8 @@ ZEND_DLEXPORT void PulseFlow_xhprof_execute_ex(zend_execute_data *execute_data) 
 
         }
 
-        if (funcName == NULL || className == NULL || classNameHash == 0 || funcNameHash == 0) {
+        // if (funcName == NULL || className == NULL || classNameHash == 0 || funcNameHash == 0) {
+        if (funcName == NULL || funcNameHash == 0) {
 
             _zend_execute_ex(execute_data TSRMLS_CC);
 
@@ -172,7 +173,8 @@ ZEND_DLEXPORT void PulseFlow_xhprof_execute_ex(zend_execute_data *execute_data) 
 
             return;
 
-        } else if (Exist_In_Hash_List(classNameHash, PULSEFLOW_G(classDisableHashList),
+        } else if ((className != NULL) && classNameHash &&
+                   Exist_In_Hash_List(classNameHash, PULSEFLOW_G(classDisableHashList),
                                       PULSEFLOW_G(classDisableHashListSize) TSRMLS_CC)) {
 
             _zend_execute_ex(execute_data TSRMLS_CC);
