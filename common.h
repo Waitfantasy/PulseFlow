@@ -15,7 +15,7 @@
 #endif
 
 #ifndef FUNC_NAME_MAX_SIZE
-#define FUNC_NAME_MAX_SIZE 20
+#define FUNC_NAME_MAX_SIZE 35
 #endif
 
 #ifndef OPTS_STR_MAX_SIZE

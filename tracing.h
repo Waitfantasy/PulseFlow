@@ -124,11 +124,25 @@ static zend_always_inline void
 Simple_Trace_Performance_End(struct timeval *CpuTimeStart, size_t *useMemoryStart, unsigned int funcArrayPointer
                              TSRMLS_DC) {
 
-    long memoryTemp = zend_memory_usage(0 TSRMLS_CC) - (*useMemoryStart);
+    /*
+     * The overall memory consumption will have a negative value, which is correct,
+     * if the function does the memory release work,
+     * but in order to adapt to the company's business,
+     * the memory consumption of the memory-released function is set to zero.
+     */
 
-    if (memoryTemp > 0) {
+    long currentFuncMemory = zend_memory_usage(0 TSRMLS_CC) - (*useMemoryStart);
 
-        PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].memoryUse += memoryTemp;
+    long currentFuncTotalMemory =
+            (long) PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].memoryUse + currentFuncMemory;
+
+    if (currentFuncTotalMemory > 0) {
+
+        PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].memoryUse = currentFuncTotalMemory;
+
+    } else {
+
+        PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcArrayPointer].memoryUse = 0;
 
     }
 
@@ -174,7 +188,6 @@ getFuncArrayId(zend_string *funcName, zend_string *className, unsigned long func
     if ((funcArrayId == -1) && (funcCurrentPointer < FUNCTION_PROF_LIST_SIZE)) { //空间未满 未找到Hash所在位置
 
         PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcCurrentPointer].funcNameHash = funcNameHash;
-        PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcCurrentPointer].classNameHash = classNameHash;
 
         strncpy(PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcCurrentPointer].functionName,
                 funcName->val,
@@ -192,19 +205,32 @@ getFuncArrayId(zend_string *funcName, zend_string *className, unsigned long func
 
         }
 
-        strncpy(PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcCurrentPointer].className, className->val,
-                CLASS_NAME_MAX_SIZE - 1);
+        if ((className != NULL) && classNameHash) {
 
-        int classNameLen = className->len;
-        if (classNameLen >= CLASS_NAME_MAX_SIZE) {
+            PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcCurrentPointer].classNameHash = classNameHash;
 
-            PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcCurrentPointer].className[CLASS_NAME_MAX_SIZE -
-                                                                                         1] = '\0';
+            strncpy(PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcCurrentPointer].className, className->val,
+                    CLASS_NAME_MAX_SIZE - 1);
+
+            int classNameLen = className->len;
+            if (classNameLen >= CLASS_NAME_MAX_SIZE) {
+
+                PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcCurrentPointer].className[CLASS_NAME_MAX_SIZE -
+                                                                                             1] = '\0';
+            } else {
+
+                PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcCurrentPointer].className[classNameLen] = '\0';
+
+            }
+
         } else {
 
-            PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcCurrentPointer].className[classNameLen] = '\0';
+            PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcCurrentPointer].classNameHash = 0;
+
+            PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcCurrentPointer].className[0] = '\0';
 
         }
+
 
         PULSEFLOW_G(Func_Prof_Data).Function_Prof_List[funcCurrentPointer].refcount = 0;
         funcArrayId = funcCurrentPointer;
@@ -428,7 +454,7 @@ static zend_always_inline int checkUrlHaveGetParm(const char *parm TSRMLS_DC) {
     return ret;
 }
 
-static zend_always_inline int getRequestRandom(long sampling_rate ,int isUrlEnabled TSRMLS_DC) {
+static zend_always_inline int getRequestRandom(long sampling_rate, int isUrlEnabled TSRMLS_DC) {
 
     int ret = -1;
 
